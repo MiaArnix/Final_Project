@@ -1,0 +1,16 @@
+# Python virtual environment
+.venv/
+venv/
+env/
+
+# Django 
+__pycache__/
+*.pyc
+
+# Svelte
+frontend/.svelte-kit/
+frontend/node_modules/
+
+# Environment variables
+*.env
+.env.*
