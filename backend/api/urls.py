@@ -2,5 +2,21 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    path("ping/", views.ping, name="ping"),
+    path('ping/', views.ping, name='ping'),
+    path('genders/', views.GenderViewSet.as_view({
+        'get': 'list',
+        'post': 'create', 'patch': 'update', 'delete': 'destroy'
+    }), name='gender-list'),
+    path('name-contexts/', views.NameContextViewSet.as_view({
+        'get': 'list',
+        'post': 'create', 'patch': 'update', 'delete': 'destroy'
+    }), name='name-context-list'),
+    path('relationship-types/', views.RelationshipTypeViewSet.as_view({
+        'get': 'list',
+        'post': 'create', 'patch': 'update', 'delete': 'destroy'
+    }), name='relationship-type-list'),
+    path('identity-name-access/', views.IdentityNameAccessViewSet.as_view({
+        'get': 'list',
+        'post': 'create', 'patch': 'update', 'delete': 'destroy'
+    }), name='identity-name-access-list'),
 ]
