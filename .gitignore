@@ -3,13 +3,9 @@
 venv/
 env/
 
-# Django 
+# Django
 __pycache__/
 *.pyc
-
-# Svelte
-frontend/.svelte-kit/
-frontend/node_modules/
 
 # Environment variables
 *.env
