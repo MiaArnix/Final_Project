@@ -2,7 +2,6 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    path('ping/', views.ping, name='ping'),
     path('genders/', views.GenderViewSet.as_view({
         'get': 'list',
         'post': 'create', 'patch': 'update', 'delete': 'destroy'

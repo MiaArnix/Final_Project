@@ -8,7 +8,6 @@ from .serializers import (
     IdentityNameAccessSerializer,
 )
 
-
 class GenderViewSet(viewsets.ModelViewSet):
     queryset = Gender.objects.all()
     serializer_class = GenderSerializer
