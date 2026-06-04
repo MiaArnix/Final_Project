@@ -1,0 +1,50 @@
+{
+  "identities": [
+    {
+      "id": 1,
+      "owner": "alice",
+      "gender": "Female",
+      "names": [
+        {
+          "name_context": "Legal Name",
+          "name_value": "Alice Johnson",
+          "is_default": true
+        },
+        {
+          "name_context": "Nickname",
+          "name_value": "AJ",
+          "is_default": false
+        }
+      ],
+      "relationships": [
+        {
+          "consumer": "bob",
+          "relationship_type": "Friend"
+        },
+        {
+          "consumer": "charlie",
+          "relationship_type": "Professional"
+        }
+      ]
+    },
+
+    {
+      "id": 2,
+      "owner": "bob",
+      "gender": "Male",
+      "names": [
+        {
+          "name_context": "Legal Name",
+          "name_value": "Robert Smith",
+          "is_default": true
+        }
+      ],
+      "relationships": [
+        {
+          "consumer": "alice",
+          "relationship_type": "Friend"
+        }
+      ]
+    }
+  ]
+}

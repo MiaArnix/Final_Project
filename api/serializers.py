@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from users.models import Gender, NameContext, RelationshipType, IdentityNameAccess
+from identity.models import Gender, NameContext, RelationshipType, IdentityNameAccess
 
 
 class GenderSerializer(serializers.ModelSerializer):

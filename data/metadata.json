@@ -1,0 +1,75 @@
+{
+  "genders": [
+    {
+      "id": 1,
+      "name": "Male"
+    },
+    {
+      "id": 2,
+      "name": "Female"
+    },
+    {
+      "id": 3,
+      "name": "Non-Binary"
+    }
+  ],
+  "name_contexts": [
+    {
+      "id": 1,
+      "name": "Legal Name"
+    },
+    {
+      "id": 2,
+      "name": "Preferred Name"
+    },
+    {
+      "id": 3,
+      "name": "Nickname"
+    }
+  ],
+  "relationship_types": [
+    {
+      "id": 1,
+      "name": "Professional"
+    },
+    {
+      "id": 2,
+      "name": "School"
+    },
+    {
+      "id": 3,
+      "name": "Hobby"
+    },
+    {
+      "id": 4,
+      "name": "Family"
+    },
+    {
+      "id": 5,
+      "name": "Friend"
+    }
+  ],
+
+  "identity_name_accesses": [
+    {
+      "relationship_type": "Professional",
+      "name_context": "Legal Name"
+    },
+    {
+      "relationship_type": "School",
+      "name_context": "Preferred Name"
+    },
+    {
+      "relationship_type": "Hobby",
+      "name_context": "Nickname"
+    },
+    {
+      "relationship_type": "Family",
+      "name_context": "Nickname"
+    },
+    {
+      "relationship_type": "Friend",
+      "name_context": "Nickname"
+    }
+  ]
+}

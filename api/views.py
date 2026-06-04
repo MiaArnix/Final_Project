@@ -1,6 +1,6 @@
 from rest_framework import viewsets
 from rest_framework.permissions import AllowAny
-from users.models import Gender, NameContext, RelationshipType, IdentityNameAccess
+from identity.models import Gender, NameContext, RelationshipType, IdentityNameAccess
 from .serializers import (
     GenderSerializer,
     NameContextSerializer,

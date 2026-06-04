@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
-from users.models import Gender, NameContext, RelationshipType, IdentityNameAccess
+from identity.models import Gender, NameContext, RelationshipType, IdentityNameAccess, Identity
 
 
 #@login_required
@@ -12,3 +12,10 @@ def metadata_list(request):
         'identity_name_access': IdentityNameAccess.objects.all(),
     }
     return render(request, 'ui/metadata_list.html', context)
+
+@login_required
+def identity_list(request):
+    context = {
+        'identities': Identity.objects.filter(owner=request.user)
+    }
+    return render(request, 'ui/identity_list.html', context)

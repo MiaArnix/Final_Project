@@ -34,10 +34,9 @@ ALLOWED_HOSTS = []
 INSTALLED_APPS = [
     'ui',
     'api',
-    'users',
+    'identity',
     'rest_framework',
     'rest_framework.authtoken',
-    'corsheaders',
     'dj_rest_auth',
     'dj_rest_auth.registration',
     'allauth',
@@ -52,7 +51,6 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -63,9 +61,6 @@ MIDDLEWARE = [
     'allauth.account.middleware.AccountMiddleware',
 ]
 
-
-CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOWED_ORIGINS = []
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -90,9 +85,11 @@ AUTHENTICATION_BACKENDS = (
 ACCOUNT_AUTHENTICATION_METHOD = "email"
 ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_USERNAME_REQUIRED = False
-ACCOUNT_EMAIL_VERIFICATION = "optional"
+ACCOUNT_EMAIL_VERIFICATION = "none"
 
 ROOT_URLCONF = 'config.urls'
+
+AUTH_USER_MODEL = 'auth.User'
 
 TEMPLATES = [
     {
