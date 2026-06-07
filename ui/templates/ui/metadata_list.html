@@ -1,167 +1,103 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends "./base.html" %}
+{% block content %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Metadata Management</title>
-    <style>
-        body {
-            font-family: sans-serif;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
+<h1>Metadata Management</h1>
+<p>Logged in as: <strong>{{ user.email }}</strong></p>
 
-        .section {
-            margin-bottom: 40px;
-        }
+<div class="section">
+    <h2>Genders</h2>
+    <table>
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+        </tr>
+        {% for gender in genders %}
+        <tr>
+            <td>{{ gender.id }}</td>
+            <td>{{ gender.name }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    <form action="/api/genders/" method="POST">
+        {% csrf_token %}
+        <input type="text" name="name" placeholder="Gender name" required>
+        <button type="submit">Add Gender</button>
+    </form>
+</div>
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 20px;
-        }
+<div class="section">
+    <h2>Name Contexts</h2>
+    <table>
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+        </tr>
+        {% for context in name_contexts %}
+        <tr>
+            <td>{{ context.id }}</td>
+            <td>{{ context.name }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    <form action="/api/name-contexts/" method="POST">
+        {% csrf_token %}
+        <input type="text" name="name" placeholder="Context name" required>
+        <button type="submit">Add Context</button>
+    </form>
+</div>
 
-        th,
-        td {
-            border: 1px solid #ddd;
-            padding: 12px;
-            text-align: left;
-        }
+<div class="section">
+    <h2>Relationship Types</h2>
+    <table>
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+        </tr>
+        {% for rel_type in relationship_types %}
+        <tr>
+            <td>{{ rel_type.id }}</td>
+            <td>{{ rel_type.name }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    <form action="/api/relationship-types/" method="POST">
+        {% csrf_token %}
+        <input type="text" name="name" placeholder="Relationship type" required>
+        <button type="submit">Add Relationship Type</button>
+    </form>
+</div>
 
-        th {
-            background-color: #f5f5f5;
-        }
-
-        form {
-            background: #f9f9f9;
-            padding: 20px;
-            border-radius: 4px;
-            margin-bottom: 20px;
-        }
-
-        input,
-        select {
-            padding: 8px;
-            margin-right: 10px;
-        }
-
-        button {
-            padding: 8px 16px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            cursor: pointer;
-            border-radius: 4px;
-        }
-
-        button:hover {
-            background-color: #0056b3;
-        }
-    </style>
-</head>
-
-<body>
-    <h1>Metadata Management</h1>
-    <p>Logged in as: <strong>{{ user.email }}</strong></p>
-
-    <div class="section">
-        <h2>Genders</h2>
-        <table>
-            <tr>
-                <th>ID</th>
-                <th>Name</th>
-            </tr>
-            {% for gender in genders %}
-            <tr>
-                <td>{{ gender.id }}</td>
-                <td>{{ gender.name }}</td>
-            </tr>
-            {% endfor %}
-        </table>
-        <form action="/api/genders/" method="POST">
-            {% csrf_token %}
-            <input type="text" name="name" placeholder="Gender name" required>
-            <button type="submit">Add Gender</button>
-        </form>
-    </div>
-
-    <div class="section">
-        <h2>Name Contexts</h2>
-        <table>
-            <tr>
-                <th>ID</th>
-                <th>Name</th>
-            </tr>
-            {% for context in name_contexts %}
-            <tr>
-                <td>{{ context.id }}</td>
-                <td>{{ context.name }}</td>
-            </tr>
-            {% endfor %}
-        </table>
-        <form action="/api/name-contexts/" method="POST">
-            {% csrf_token %}
-            <input type="text" name="name" placeholder="Context name" required>
-            <button type="submit">Add Context</button>
-        </form>
-    </div>
-
-    <div class="section">
-        <h2>Relationship Types</h2>
-        <table>
-            <tr>
-                <th>ID</th>
-                <th>Name</th>
-            </tr>
+<div class="section">
+    <h2>Identity Name Access</h2>
+    <table>
+        <tr>
+            <th>ID</th>
+            <th>Relationship Type</th>
+            <th>Name Context</th>
+        </tr>
+        {% for item in identity_name_access %}
+        <tr>
+            <td>{{ item.id }}</td>
+            <td>{{ item.relationship_type.name }}</td>
+            <td>{{ item.name_context.name }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    <form action="/api/identity-name-access/" method="POST">
+        {% csrf_token %}
+        <select name="relationship_type" required>
+            <option value="">Select Relationship Type</option>
             {% for rel_type in relationship_types %}
-            <tr>
-                <td>{{ rel_type.id }}</td>
-                <td>{{ rel_type.name }}</td>
-            </tr>
+            <option value="{{ rel_type.id }}">{{ rel_type.name }}</option>
             {% endfor %}
-        </table>
-        <form action="/api/relationship-types/" method="POST">
-            {% csrf_token %}
-            <input type="text" name="name" placeholder="Relationship type" required>
-            <button type="submit">Add Relationship Type</button>
-        </form>
-    </div>
-
-    <div class="section">
-        <h2>Identity Name Access</h2>
-        <table>
-            <tr>
-                <th>ID</th>
-                <th>Relationship Type</th>
-                <th>Name Context</th>
-            </tr>
-            {% for item in identity_name_access %}
-            <tr>
-                <td>{{ item.id }}</td>
-                <td>{{ item.relationship_type.name }}</td>
-                <td>{{ item.name_context.name }}</td>
-            </tr>
+        </select>
+        <select name="name_context" required>
+            <option value="">Select Name Context</option>
+            {% for context in name_contexts %}
+            <option value="{{ context.id }}">{{ context.name }}</option>
             {% endfor %}
-        </table>
-        <form action="/api/identity-name-access/" method="POST">
-            {% csrf_token %}
-            <select name="relationship_type" required>
-                <option value="">Select Relationship Type</option>
-                {% for rel_type in relationship_types %}
-                <option value="{{ rel_type.id }}">{{ rel_type.name }}</option>
-                {% endfor %}
-            </select>
-            <select name="name_context" required>
-                <option value="">Select Name Context</option>
-                {% for context in name_contexts %}
-                <option value="{{ context.id }}">{{ context.name }}</option>
-                {% endfor %}
-            </select>
-            <button type="submit">Add Identity Name Access</button>
-        </form>
-    </div>
-</body>
-
-</html>
+        </select>
+        <button type="submit">Add Identity Name Access</button>
+    </form>
+</div>
+{% endblock %}

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from identity.models import Gender, NameContext, RelationshipType, IdentityNameAccess
+from identity.models import Gender, NameContext, RelationshipType, IdentityNameAccess, Identity, IdentityName
 
 
 class GenderSerializer(serializers.ModelSerializer):
@@ -31,3 +31,20 @@ class IdentityNameAccessSerializer(serializers.ModelSerializer):
     class Meta:
         model = IdentityNameAccess
         fields = ['id', 'relationship_type', 'name_context']
+        
+class IdentitySerializer(serializers.ModelSerializer):
+    owner = serializers.CharField(source='owner.username')
+    gender = serializers.CharField(source='gender.name')
+    names = serializers.StringRelatedField(many=True)
+    class Meta:
+        model = Identity
+        fields = ['id', 'owner', 'gender', 'names']
+        read_only_fields = ['id', 'owner']
+        
+class IdentityNameSerializer(serializers.ModelSerializer):
+    name_context = serializers.CharField(source='name_context.name')
+    
+    class Meta:
+        model = IdentityName
+        fields = ['id', 'identity', 'name_value', 'name_context']
+        read_only_fields = ['id', 'identity']

@@ -18,4 +18,12 @@ urlpatterns = [
         'get': 'list',
         'post': 'create', 'patch': 'update', 'delete': 'destroy'
     }), name='identity-name-access-list'),
+    path('identities/', views.IdentityViewSet.as_view({
+        'get': 'list',
+        'post': 'create', 'patch': 'update', 'delete': 'destroy'
+    }), name='identity-list'),
+    path('identity-names/', views.IdentityNameViewSet.as_view({
+        'get': 'list',
+        'post': 'create', 'patch': 'update', 'delete': 'destroy'
+    }), name='identity-name-list')
 ]
