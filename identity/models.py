@@ -13,6 +13,7 @@ class Identity(models.Model):
     gender = models.ForeignKey(Gender, on_delete=models.SET_NULL, null=True)  
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    is_public = models.BooleanField(default=False)
     
 class NameContext(models.Model):
     name = models.CharField(max_length=100, null=False, blank=False, unique=True)
@@ -65,7 +66,7 @@ class IdentityRelationship(models.Model):
         return f"{self.consumer} - {self.relationship_type} - {self.identity}"
     
     class Meta:
-        unique_together = ('identity', 'consumer')
+        unique_together = ('identity', 'consumer', 'relationship_type')
         
     
 class IdentityNameAccess(models.Model):

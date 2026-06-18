@@ -4,9 +4,10 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib import messages
 from identity.models import Gender, NameContext, RelationshipType, IdentityNameAccess, Identity
 
+def index(request):
+    return render(request, 'ui/index.html')
 
 def register(request):
-    """Handle user registration"""
     if request.user.is_authenticated:
         return redirect('ui:identity-list')
     
