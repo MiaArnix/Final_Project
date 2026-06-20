@@ -1,5 +1,5 @@
 import rules
-from identity.models import IdentityRelationship
+from identity.models import IdentityRelationship, IdentityNameAccess
 
 @rules.predicate
 def is_identity_owner(user, identity):

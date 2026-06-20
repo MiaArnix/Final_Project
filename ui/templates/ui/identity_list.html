@@ -24,23 +24,43 @@
         </tr>
         {% for name in identity.names.all %}
         <tr>
-            <td>{{ name.name }}</td>
-            <td>{{ name.context.name }}</td>
+            <td>{{ name.name_value }}</td>
+            <td>{{ name.name_context.name }}</td>
         </tr>
         {% endfor %}
     </table>
     <table>
         <tr>
-            <th>Related Identity</th>
+            <th>User Accessing Identity</th>
             <th>Relationship Type</th>
         </tr>
         {% for relation in identity.relationships.all %}
         <tr>
-            <td>{{ relation.related_identity.id }}</td>
+            <td>{{ relation.consumer.username }}</td>
             <td>{{ relation.relationship_type.name }}</td>
         </tr>
         {% endfor %}
     </table>
+    <h3>Add Relationship</h3>
+    <form method="POST" action="{% url 'ui:add-relationship' %}">
+        {% csrf_token %}
+
+        <input type="hidden" name="identity_id" value="{{ identity.id }}">
+        <label>Consumer:</label>
+        <select name="consumer">
+            {% for consumer in consumers %}
+            <option value="{{ consumer.id }}">{{ consumer.username }}</option>
+            {% endfor %}
+        </select>
+        <label>Relationship Type:</label>
+        <select name="relationship_type_id">
+            {% for rt in relationship_types %}
+            <option value="{{ rt.id }}">{{ rt.name }}</option>
+            {% endfor %}
+        </select>
+
+        <button type="submit">Add Relationship</button>
+    </form>
 </div>
 {% endfor %}
 {% endblock %}

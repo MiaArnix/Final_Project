@@ -2,10 +2,10 @@ from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib import messages
-from identity.models import Gender, NameContext, RelationshipType, IdentityNameAccess, Identity
+from django.contrib.auth import get_user_model
+from identity.models import Gender, NameContext, RelationshipType, IdentityNameAccess, Identity, IdentityRelationship
 
-def index(request):
-    return render(request, 'ui/index.html')
+AuthUser = get_user_model()
 
 def register(request):
     if request.user.is_authenticated:
@@ -40,6 +40,31 @@ def metadata_list(request):
 @login_required
 def identity_list(request):
     context = {
-        'identities': Identity.objects.filter(owner=request.user)
+        'identities': Identity.objects.filter(owner=request.user),
+        'relationship_types': RelationshipType.objects.all(),
+        'consumers': AuthUser.objects.exclude(id=request.user.id),
     }
+    
+    for identity in context['identities']:
+        print(f'Identity {identity.id} has {identity.names.count()} names')
     return render(request, 'ui/identity_list.html', context)
+
+@login_required
+def add_relationship(request):
+    if request.method == 'POST':
+        identity_id = request.POST.get('identity_id')
+        relationship_type_id = request.POST.get('relationship_type_id')
+        consumer_id = request.POST.get('consumer')
+
+        identity = Identity.objects.get(id=identity_id)
+        relationship_type = RelationshipType.objects.get(id=relationship_type_id)
+        consumer= AuthUser.objects.get(id=consumer_id)
+
+        IdentityRelationship.objects.create(
+            identity = identity,
+            relationship_type = relationship_type,
+            consumer = consumer
+            )
+
+        messages.success(request, 'Access added successfully!')
+        return redirect('ui:identity-list')

@@ -66,7 +66,7 @@ class IdentityRelationship(models.Model):
         return f"{self.consumer} - {self.relationship_type} - {self.identity}"
     
     class Meta:
-        unique_together = ('identity', 'consumer', 'relationship_type')
+        unique_together = ('identity', 'consumer')
         
     
 class IdentityNameAccess(models.Model):
