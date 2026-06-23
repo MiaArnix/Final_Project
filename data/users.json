@@ -6,6 +6,11 @@
       "username": "charlie",
       "email": "charlie@example.com",
       "password": "pass1234"
+    },
+    {
+      "username": "david",
+      "email": "david@example.com",
+      "password": "pass1234"
     }
   ]
 }

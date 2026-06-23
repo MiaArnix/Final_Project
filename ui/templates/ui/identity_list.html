@@ -33,11 +33,14 @@
         <tr>
             <th>User Accessing Identity</th>
             <th>Relationship Type</th>
+            <th>Actions</th>
         </tr>
         {% for relation in identity.relationships.all %}
         <tr>
             <td>{{ relation.consumer.username }}</td>
             <td>{{ relation.relationship_type.name }}</td>
+            <td><a href="{% url 'ui:delete-relationship' relation.id %}">Delete</a>
+            </td>
         </tr>
         {% endfor %}
     </table>

@@ -79,13 +79,11 @@ for identity in identities:
     owner = AuthUser.objects.get(username=identity["owner"])
     names = identity["names"]
     relationships = identity["relationships"]
-    Identity.objects.create(
-        id=identity["id"],
+    identity_instance = Identity.objects.create(
         owner=owner,
+        is_public=identity["is_public"],
         gender=Gender.objects.get(name=identity["gender"])
     )
-    
-    identity_instance = Identity.objects.get(id=identity["id"])
 
     for name in names:
         name_context = NameContext.objects.get(name=name["name_context"])

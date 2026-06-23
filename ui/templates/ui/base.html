@@ -1,6 +1,13 @@
 {% include "./header.html" %}
 {% include "./title.html" %}
 <div>
+  {% if messages %}
+  <script>
+    {% for message in messages %}
+    alert("{{ message|escapejs }}");
+    {% endfor %}
+  </script>
+  {% endif %}
   <div>
     {% block content %} Did not render content {% endblock %}
   </div>

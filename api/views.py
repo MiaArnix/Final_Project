@@ -1,12 +1,14 @@
 from rest_framework import viewsets
 from rest_framework.permissions import BasePermission, SAFE_METHODS
-from identity.models import Gender, NameContext, RelationshipType, IdentityNameAccess, Identity
+from rest_framework.exceptions import PermissionDenied
+from identity.models import Gender, NameContext, RelationshipType, IdentityNameAccess, Identity, IdentityRelationship
 from .serializers import (
     GenderSerializer,
     NameContextSerializer,
     RelationshipTypeSerializer,
     IdentityNameAccessSerializer,
-    IdentitySerializer,
+    IdentitySerializer, 
+    IdentityRelationshipSerializer
 )
 
 class IdentityPermission(BasePermission):
@@ -22,7 +24,10 @@ class IdentityPermission(BasePermission):
         else: 
             perm = 'identity.write_identity'
         
-        return request.user.has_perm(perm, obj)
+        if not request.user.has_perm(perm, obj):
+            raise PermissionDenied("You do not have permission to access this identity.")
+
+        return True
 
 class IdentityNamePermission(BasePermission):
     
@@ -31,17 +36,33 @@ class IdentityNamePermission(BasePermission):
     
     def has_object_permission(self, request, view, obj):
         perm = 'identity.access_identity_name'
-        return request.user.has_perm(perm, obj)
+        
+        if not request.user.has_perm(perm, obj):
+            raise PermissionDenied("You do not have permission to access this identity name.")
+
+        return True
+    
+class IdentityRelationshipPermission(BasePermission):
+    def has_object_permission(self, request, view, obj):
+        identity = obj.identity 
+        if request.method in SAFE_METHODS:
+            perm = 'identity.read_identity'
+        else:
+            perm = 'identity.write_identity'
+
+        if not request.user.has_perm(perm, identity):
+            raise PermissionDenied("You do not have permission to access this relationship.")
+
+        return True
+
 
 class MetadataPermission(BasePermission):
     
     def has_permission(self, request, view):
         if request.method in SAFE_METHODS:
-            perm = 'identity.read_metadata'
-        else:
-            perm = 'identity.write_metadata'
-        
-        return request.user.has_perm(perm)
+            return True
+
+        return request.user.has_perm('identity.write_metadata')
 
 class GenderViewSet(viewsets.ModelViewSet):
     queryset = Gender.objects.all()
@@ -72,7 +93,7 @@ class IdentityViewSet(viewsets.ModelViewSet):
     permission_classes = [IdentityPermission]
     
     def get_queryset(self):
-        queryset = super().get_queryset()
+        queryset = Identity.objects.all()
         consumer = self.request.user
         identity_id = self.request.query_params.get('identity_id')
         
@@ -90,3 +111,4 @@ class IdentityViewSet(viewsets.ModelViewSet):
         owned_identities = queryset.filter(owner=consumer)
 
         return (public_identities | user_identities | owned_identities).distinct()
+    

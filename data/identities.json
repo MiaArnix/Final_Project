@@ -1,9 +1,9 @@
 {
   "identities": [
     {
-      "id": 1,
       "owner": "alice",
       "gender": "Female",
+      "is_public": true,
       "names": [
         {
           "name_context": "Legal Name",
@@ -27,16 +27,25 @@
         }
       ]
     },
-
     {
-      "id": 2,
       "owner": "bob",
       "gender": "Male",
+      "is_public": false,
       "names": [
         {
           "name_context": "Legal Name",
           "name_value": "Robert Smith",
           "is_default": true
+        },
+        {
+          "name_context": "Nickname",
+          "name_value": "Bobby",
+          "is_default": false
+        },
+        {
+          "name_context": "Preferred Name",
+          "name_value": "Rob",
+          "is_default": false
         }
       ],
       "relationships": [
@@ -45,6 +54,73 @@
           "relationship_type": "Friend"
         }
       ]
+    },
+    {
+      "owner": "charlie",
+      "gender": "Non-Binary",
+      "is_public": false,
+      "names": [
+        {
+          "name_context": "Legal Name",
+          "name_value": "Charlie Taylor",
+          "is_default": true
+        },
+        {
+          "name_context": "Preferred Name",
+          "name_value": "Char",
+          "is_default": false
+        }
+      ],
+      "relationships": [
+        {
+          "consumer": "alice",
+          "relationship_type": "Friend"
+        },
+        {
+          "consumer": "bob",
+          "relationship_type": "Family"
+        }
+      ]
+    },
+    {
+      "owner": "david",
+      "gender": "Male",
+      "is_public": false,
+      "names": [
+        {
+          "name_context": "Legal Name",
+          "name_value": "David Taylor",
+          "is_default": true
+        },
+        {
+          "name_context": "Preferred Name",
+          "name_value": "Dave",
+          "is_default": false
+        }
+      ],
+      "relationships": [
+        {
+          "consumer": "alice",
+          "relationship_type": "Professional"
+        },
+        {
+          "consumer": "bob",
+          "relationship_type": "School"
+        }
+      ]
+    },
+    {
+      "owner": "david",
+      "gender": "Male",
+      "is_public": true,
+      "names": [
+        {
+          "name_context": "Nickname",
+          "name_value": "Deevo",
+          "is_default": true
+        }
+      ],
+      "relationships": []
     }
   ]
 }

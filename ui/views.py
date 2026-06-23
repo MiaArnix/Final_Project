@@ -44,9 +44,6 @@ def identity_list(request):
         'relationship_types': RelationshipType.objects.all(),
         'consumers': AuthUser.objects.exclude(id=request.user.id),
     }
-    
-    for identity in context['identities']:
-        print(f'Identity {identity.id} has {identity.names.count()} names')
     return render(request, 'ui/identity_list.html', context)
 
 @login_required
@@ -60,11 +57,23 @@ def add_relationship(request):
         relationship_type = RelationshipType.objects.get(id=relationship_type_id)
         consumer= AuthUser.objects.get(id=consumer_id)
 
-        IdentityRelationship.objects.create(
-            identity = identity,
-            relationship_type = relationship_type,
-            consumer = consumer
-            )
+        if not IdentityRelationship.objects.filter(identity=identity, consumer=consumer).exists():
+            IdentityRelationship.objects.create(
+                identity = identity,
+                relationship_type = relationship_type,
+                consumer = consumer
+                )
+        else:
+            messages.error(request, 'Access already exists!')
+            return redirect('ui:identity-list')
 
         messages.success(request, 'Access added successfully!')
         return redirect('ui:identity-list')
+    
+@login_required
+def delete_relationship(request, relationship_id):
+    relationship = IdentityRelationship.objects.get(id=relationship_id)
+    if relationship.identity.owner == request.user:
+        relationship.delete()
+        messages.success(request, 'Access deleted successfully!')
+    return redirect('ui:identity-list')

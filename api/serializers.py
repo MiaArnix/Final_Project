@@ -23,10 +23,16 @@ class IdentityRelationshipSerializer(serializers.ModelSerializer):
     relationship_type = serializers.CharField(
         source='relationship_type.name', read_only=True
     )
+    consumer = serializers.CharField(
+        source='consumer.username', read_only=True
+    )
+    identity_owner = serializers.CharField(
+        source='identity.owner.username', read_only=True
+    )
     
     class Meta:
         model = IdentityRelationship
-        fields = ['id', 'identity', 'consumer', 'relationship_type']
+        fields = ['id', 'identity_owner','identity', 'consumer', 'relationship_type']
 
 
 class IdentityNameAccessSerializer(serializers.ModelSerializer):
@@ -42,15 +48,85 @@ class IdentityNameAccessSerializer(serializers.ModelSerializer):
         fields = ['id', 'relationship_type', 'name_context']
         
 class IdentitySerializer(serializers.ModelSerializer):
-    owner = serializers.CharField(source='owner.username')
-    gender = serializers.CharField(source='gender.name')
-    names = serializers.SerializerMethodField()
+    owner = serializers.CharField(source='owner.username', read_only=True)
+    gender = serializers.CharField(source='gender.name', read_only=True)
+    names = serializers.SerializerMethodField(read_only=True)
+    
+    gender_id = serializers.PrimaryKeyRelatedField(
+        queryset=Gender.objects.all(), write_only=True, required=False
+    )
+    is_public = serializers.BooleanField(write_only=True, required=False)
+    names_list = serializers.ListField(
+        child=serializers.DictField(), write_only=True, required=False
+    )
     
     class Meta:
         model = Identity
-        fields = ['id', 'owner', 'gender', 'names']
+        fields = ['id', 'owner', 'gender', 'names', 'gender_id', 'is_public', 'names_list']
         read_only_fields = ['id', 'owner']
         
+    def validate(self, data):
+        is_create_action = self.instance is None
+        names_list = data.get('names_list', [])
+        gender_id = data.get('gender_id')
+        is_public = data.get('is_public')
+        
+        if is_create_action:
+            if gender_id is None:
+                raise serializers.ValidationError("The 'gender_id' field is required.")
+            if is_public is None:
+                raise serializers.ValidationError("The 'is_public' field is required.")
+            if not names_list:
+                raise serializers.ValidationError("At least one name must be provided.")
+        
+            default_names = [name for name in names_list if name.get('is_default')]
+            if len(default_names) != 1:
+                raise serializers.ValidationError("Exactly one default name must be provided.")
+        
+        return data
+    
+    def create(self, validated_data):
+        gender = validated_data.get('gender_id')
+        is_public = validated_data.get('is_public')
+        names_list = validated_data.get('names_list')
+        
+        identity = Identity.objects.create(
+            owner=self.context['request'].user,
+            gender=gender,
+            is_public=is_public
+        )
+        
+        for name_data in names_list:
+            name_context_id = name_data.get('name_context_id')
+            name_value = name_data.get('name_value')
+            is_default = name_data.get('is_default', False)
+            
+            if not name_context_id or not name_value:
+                raise serializers.ValidationError("Each name must have a 'name_context_id' and 'name_value'.")
+            
+            name_context = NameContext.objects.get(id=name_context_id)
+            IdentityName.objects.create(
+                identity=identity,
+                name_context=name_context,
+                name_value=name_value,
+                is_default=is_default
+            )
+            
+        return identity
+    
+    def update(self, instance, validated_data):
+        gender = validated_data.pop('gender_id', None)
+        is_public = validated_data.pop('is_public', None)
+        
+        if gender is not None:
+            instance.gender = gender
+
+        if is_public is not None:
+            instance.is_public = is_public
+
+        instance.save()
+        return instance
+    
     def get_names(self, identity):
         consumer = self.context['request'].user
         
