@@ -55,7 +55,7 @@ class IdentitySerializer(serializers.ModelSerializer):
     gender_id = serializers.PrimaryKeyRelatedField(
         queryset=Gender.objects.all(), write_only=True, required=False
     )
-    is_public = serializers.BooleanField(write_only=True, required=False)
+    is_public = serializers.BooleanField(required=False)
     names_list = serializers.ListField(
         child=serializers.DictField(), write_only=True, required=False
     )
@@ -89,6 +89,11 @@ class IdentitySerializer(serializers.ModelSerializer):
         gender = validated_data.get('gender_id')
         is_public = validated_data.get('is_public')
         names_list = validated_data.get('names_list')
+        
+        if not names_list or len(names_list) == 0:
+            raise serializers.ValidationError({
+            "names_list": "At least one name must be provided."
+        })
         
         identity = Identity.objects.create(
             owner=self.context['request'].user,
@@ -170,7 +175,7 @@ class IdentityNameSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = IdentityName
-        fields = ['id', 'identity', 'name_value', 'name_context']
+        fields = ['id', 'identity', 'name_value', 'name_context', 'is_default']
         read_only_fields = ['id', 'identity']
         
     
