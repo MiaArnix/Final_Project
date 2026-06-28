@@ -4,8 +4,8 @@
 <h1>Identity Management</h1>
 <p>Logged in as: <strong>{{ user.username }}</strong></p>
 
-<h2>Identities</h2>
 {% for identity in identities %}
+<h2>Identity: {{ identity.id }}</h2>
 <div class="section">
     <table>
         <tr>

@@ -2,7 +2,7 @@
 {% block content %}
 
 <h1>Metadata Management</h1>
-<p>Logged in as: <strong>{{ user.email }}</strong></p>
+<p>Logged in as: <strong>{{ user.username }}</strong></p>
 
 <div class="section">
     <h2>Genders</h2>
@@ -18,11 +18,13 @@
         </tr>
         {% endfor %}
     </table>
+    {% if user.is_superuser %}
     <form action="/api/genders/" method="POST">
         {% csrf_token %}
         <input type="text" name="name" placeholder="Gender name" required>
         <button type="submit">Add Gender</button>
     </form>
+    {% endif %}
 </div>
 
 <div class="section">
@@ -39,11 +41,13 @@
         </tr>
         {% endfor %}
     </table>
+    {% if user.is_superuser %}
     <form action="/api/name-contexts/" method="POST">
         {% csrf_token %}
         <input type="text" name="name" placeholder="Context name" required>
         <button type="submit">Add Context</button>
     </form>
+    {% endif %}
 </div>
 
 <div class="section">
@@ -60,11 +64,13 @@
         </tr>
         {% endfor %}
     </table>
+    {% if user.is_superuser %}
     <form action="/api/relationship-types/" method="POST">
         {% csrf_token %}
         <input type="text" name="name" placeholder="Relationship type" required>
         <button type="submit">Add Relationship Type</button>
     </form>
+    {% endif %}
 </div>
 
 <div class="section">
@@ -83,6 +89,7 @@
         </tr>
         {% endfor %}
     </table>
+    {% if user.is_superuser %}
     <form action="/api/identity-name-access/" method="POST">
         {% csrf_token %}
         <select name="relationship_type" required>
@@ -99,5 +106,6 @@
         </select>
         <button type="submit">Add Identity Name Access</button>
     </form>
+    {% endif %}
 </div>
 {% endblock %}

@@ -3,17 +3,17 @@
     {
       "owner": "alice",
       "gender": "Female",
-      "is_public": true,
+      "is_public": false,
       "names": [
         {
           "name_context": "Legal Name",
           "name_value": "Alice Johnson",
-          "is_default": true
+          "is_default": false
         },
         {
           "name_context": "Nickname",
           "name_value": "AJ",
-          "is_default": false
+          "is_default": true
         }
       ],
       "relationships": [
