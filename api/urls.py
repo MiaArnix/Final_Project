@@ -26,4 +26,16 @@ urlpatterns = [
         'get': 'retrieve',
         'patch': 'update', 'delete': 'destroy'
     }), name='identity-detail'),
+    path('identity/<int:identity_pk>/relationships/', views.IdentityRelationshipViewSet.as_view({
+        'get': 'list', 'post': 'create'}), 
+         name='identity-relationships'),
+    path('identity/<int:identity_pk>/relationships/<int:pk>/', views.IdentityRelationshipViewSet.as_view({
+        'get': 'retrieve', 'patch': 'update', 'delete': 'destroy'}), 
+         name='identity-relationship-detail'),
+    path('identity/<int:identity_pk>/names/', views.IdentityNameViewSet.as_view({
+        'get': 'list', 'post': 'create'}), 
+         name='identity-names'),
+    path('identity/<int:identity_pk>/names/<int:pk>/', views.IdentityNameViewSet.as_view({
+        'get': 'retrieve', 'patch': 'update', 'delete': 'destroy'}), 
+         name='identity-name-detail'),
 ]
