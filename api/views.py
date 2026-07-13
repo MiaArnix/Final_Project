@@ -1,6 +1,6 @@
 from rest_framework import viewsets, serializers
 from rest_framework.permissions import BasePermission, SAFE_METHODS
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import PermissionDenied, NotFound
 from identity.models import Gender, NameContext, RelationshipType, IdentityNameAccess, Identity, IdentityRelationship, IdentityName
 from .serializers import (
     GenderSerializer,
@@ -33,11 +33,21 @@ class IdentityPermission(BasePermission):
 class IdentityNamePermission(BasePermission):
     
     def has_permission(self, request, view):
+        identity_id = view.kwargs.get('identity_pk')
+        
+        identity = Identity.objects.get(pk=identity_id)
+        perm = 'identity.read_identity_name'
+            
+        if not request.user.has_perm(perm, identity):
+            raise PermissionDenied("You do not have permission to access this identity name.")
         return True
     
     def has_object_permission(self, request, view, obj):
         identity = obj.identity
-        perm = 'identity.access_identity_name'
+        if request.method in SAFE_METHODS:
+            perm = 'identity.read_identity_name'
+        else: 
+            perm = 'identity.write_identity_name'
         
         if not request.user.has_perm(perm, identity):
             raise PermissionDenied("You do not have permission to access this identity name.")
@@ -46,7 +56,15 @@ class IdentityNamePermission(BasePermission):
     
 class IdentityRelationshipPermission(BasePermission):
     def has_permission(self, request, view):
-        return request.user.is_authenticated
+        identity_id = view.kwargs.get('identity_pk')
+        
+        identity = Identity.objects.get(pk=identity_id)
+        perm = 'identity.read_identity_relationship'
+            
+        if not request.user.has_perm(perm, identity):
+            raise PermissionDenied("You do not have permission to access this identity relationship.")
+
+        return True
     
     def has_object_permission(self, request, view, obj):
         identity = obj.identity 
@@ -152,21 +170,16 @@ class IdentityNameViewSet(viewsets.ModelViewSet):
         serializer.save(identity=identity)
     
     def get_queryset(self):
-        user = self.request.user
-        queryset = IdentityName.objects.all()
-        
-        # only return names for identities owned by user
         identity_id = self.kwargs.get('identity_pk')
         name_id = self.kwargs.get('pk')
         
+        queryset = IdentityName.objects.all()
         
         if name_id and identity_id:
-            queryset = queryset.filter(id=name_id, identity_id=identity_id, identity__owner=user)
+            queryset = queryset.filter(id=name_id, identity_id=identity_id)
         elif identity_id:
-            queryset = queryset.filter(identity_id=identity_id, identity__owner=user)
-        else:
-            queryset = queryset.filter(identity__owner=user)
-        
+            queryset = queryset.filter(identity_id=identity_id )
+
         return queryset
     
     def destroy(self, request, *args, **kwargs):

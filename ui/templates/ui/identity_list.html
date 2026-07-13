@@ -2,7 +2,14 @@
 {% block content %}
 
 <h1>Identity Management</h1>
-<p>Logged in as: <strong>{{ user.username }}</strong></p>
+
+{% if scope == 'owned' %}
+<h2>My Identities</h2>
+{% elif scope == 'shared' %}
+<h2>Identities Shared with Me</h2>
+{% else %}
+<h2>Public Identities List</h2>
+{% endif %}
 
 {% for identity in identities %}
 <h2>Identity: {{ identity.id }}</h2>
@@ -21,14 +28,26 @@
         <tr>
             <th>Name</th>
             <th>Context</th>
+            <th>Default?</th>
+            {% if scope == 'owned' %}
+            <th>Actions</th>
+            {% endif %}
         </tr>
         {% for name in identity.names.all %}
         <tr>
             <td>{{ name.name_value }}</td>
             <td>{{ name.name_context.name }}</td>
+            <td>{% if name.is_default %}Yes{% else %}No{% endif %}</td>
+            {% if scope == 'owned' %}
+            <td><a href="{% url 'ui:delete-name' name.id %}">Delete</a>
+                <a href="{% url 'ui:edit-name' name.id %}">Edit</a>
+            </td>
+            {% endif %}
         </tr>
         {% endfor %}
     </table>
+    {% if scope == 'owned' %}
+    <h3>Add Name</h3>
     <table>
         <tr>
             <th>User Accessing Identity</th>
@@ -64,6 +83,7 @@
 
         <button type="submit">Add Relationship</button>
     </form>
+    {% endif %}
 </div>
 {% endfor %}
 {% endblock %}

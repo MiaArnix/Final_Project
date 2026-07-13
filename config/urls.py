@@ -1,7 +1,6 @@
 from django.contrib import admin
 from django.urls import path, include
-from rest_framework.schemas import get_schema_view
-from django.views.generic import TemplateView
+from drf_spectacular.views import SpectacularJSONAPIView, SpectacularSwaggerView
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
@@ -18,10 +17,6 @@ urlpatterns = [
     path("api/auth/jwt/logout/", TokenBlacklistView.as_view(), name="jwt-logout"),
     path("api/", include("api.urls")),
     path("admin/", admin.site.urls),
-    path('apischema/', get_schema_view(title="Identity Management API",
-         description="API for managing identities and relationships",
-         version="1.0.0"), name='openapi-schema'),
-    path('swagger-docs/', TemplateView.as_view(
-         template_name='ui/swagger-docs.html',
-         extra_context={'schema_url': 'openapi-schema'}), name='swagger-ui'),
+    path('api/schema/', SpectacularJSONAPIView.as_view(), name='schema'),
+    path('api/docs/', SpectacularSwaggerView.as_view(), name='docs'),
 ]

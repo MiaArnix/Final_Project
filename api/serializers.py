@@ -193,10 +193,18 @@ class IdentityNameAccessSerializer(serializers.ModelSerializer):
     name_context = serializers.CharField(
         source='name_context.name', read_only=True
     )
+    
+    relationship_type_id = serializers.PrimaryKeyRelatedField(
+        queryset=RelationshipType.objects.all(), source='relationship_type', write_only=True
+    )
+    name_context_id = serializers.PrimaryKeyRelatedField(
+        queryset=NameContext.objects.all(), source='name_context', write_only=True
+    )
 
     class Meta:
         model = IdentityNameAccess
-        fields = ['id', 'relationship_type', 'name_context']
+        fields = ['id', 'relationship_type', 'name_context', 'relationship_type_id', 'name_context_id']
+        read_only_fields = ['id', 'relationship_type', 'name_context']
         
 class IdentitySerializer(serializers.ModelSerializer):
     owner = serializers.CharField(source='owner.username', read_only=True)

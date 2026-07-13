@@ -5,6 +5,7 @@
     <ul class="navbar-nav mr-auto" id="navigation">
 
       {% if user.is_authenticated %}
+      <p>Logged in as: <strong>{{ user.username }}</strong></p>
       <li class="nav-item active">
         <a class="nav-link" href="{% url 'logout' %}">Logout</a>
       </li>
