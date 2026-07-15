@@ -18,11 +18,20 @@
         <tr>
             <th>ID</th>
             <th>Gender</th>
+            <th>Public?</th>
+            {% if scope == 'owned' %}
+            <th>Actions</th>
+            {% endif %}
         </tr>
         <tr>
             <td>{{ identity.id }}</td>
             <td>{{ identity.gender.name }}</td>
+            <td>{% if identity.is_public %}Yes{% else %}No{% endif %}</td>
+            {% if scope == 'owned' %}
+            <td><a href="{%url 'ui:delete-identity' identity.id %}">Delete</a> <a
+                    href="{%url 'ui:edit-identity' identity.id %}">Edit</a></td>
         </tr>
+        {% endif %}
     </table>
     <table>
         <tr>
@@ -33,14 +42,14 @@
             <th>Actions</th>
             {% endif %}
         </tr>
-        {% for name in identity.names.all %}
+        {% for name in identity.names %}
         <tr>
             <td>{{ name.name_value }}</td>
             <td>{{ name.name_context.name }}</td>
             <td>{% if name.is_default %}Yes{% else %}No{% endif %}</td>
             {% if scope == 'owned' %}
-            <td><a href="{% url 'ui:delete-name' name.id %}">Delete</a>
-                <a href="{% url 'ui:edit-name' name.id %}">Edit</a>
+            <td><a href="{% url 'ui:delete-name' name.id %}">Delete</a> <a
+                    href="{% url 'ui:edit-name' name.id %}">Edit</a>
             </td>
             {% endif %}
         </tr>
@@ -48,16 +57,32 @@
     </table>
     {% if scope == 'owned' %}
     <h3>Add Name</h3>
+    <form method="POST" action="{% url 'ui:add-name' %}">
+        {% csrf_token %}
+
+        <input type="hidden" name="identity_id" value="{{ identity.id }}">
+        <label>Name context:</label>
+        <select name="name_context_id">
+            {% for context in name_contexts %}
+            <option value="{{ context.id }}">{{ context.name }}</option>
+            {% endfor %}
+        </select>
+        <label>Name value:</label>
+        <input type="text" name="name_value">
+        <label>Default?</label>
+        <input type="checkbox" name="is_default">
+        <button type="submit">Add Name</button>
+    </form>
     <table>
         <tr>
             <th>User Accessing Identity</th>
             <th>Relationship Type</th>
             <th>Actions</th>
         </tr>
-        {% for relation in identity.relationships.all %}
+        {% for relation in identity.relationships %}
         <tr>
-            <td>{{ relation.consumer.username }}</td>
-            <td>{{ relation.relationship_type.name }}</td>
+            <td>{{ relation.consumer }}</td>
+            <td>{{ relation.relationship_type }}</td>
             <td><a href="{% url 'ui:delete-relationship' relation.id %}">Delete</a>
             </td>
         </tr>
