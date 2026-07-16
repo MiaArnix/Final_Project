@@ -31,3 +31,7 @@ class IdentityNameAccessFactory(factory.django.DjangoModelFactory):
 class IdentityFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = Identity
+        
+class IdentityRelationshipFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = IdentityRelationship

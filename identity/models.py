@@ -8,6 +8,9 @@ class Gender(models.Model):
 
     def __str__(self):
         return self.name
+    
+    class Meta:
+        ordering = ['id']
 
 class Identity(models.Model):
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)  
@@ -21,6 +24,9 @@ class NameContext(models.Model):
     
     def __str__(self):
         return self.name
+    
+    class Meta:
+        ordering = ['id']
 
 class IdentityName(models.Model):
     identity = models.ForeignKey(Identity, on_delete=models.CASCADE, related_name='names')
@@ -47,12 +53,16 @@ class IdentityName(models.Model):
     
     class Meta:
         unique_together = ('identity', 'name_context')
+        ordering = ['id']
         
 class RelationshipType(models.Model):
     name = models.CharField(max_length=50, null=False, blank=False, unique=True)
 
     def __str__(self):
         return self.name
+    
+    class Meta:
+        ordering = ['id']
     
 class IdentityRelationship(models.Model):
     identity = models.ForeignKey(Identity, on_delete=models.CASCADE,
@@ -68,7 +78,7 @@ class IdentityRelationship(models.Model):
     
     class Meta:
         unique_together = ('identity', 'consumer')
-        
+        ordering = ['id']        
     
 class IdentityNameAccess(models.Model):
     relationship_type = models.ForeignKey(RelationshipType, on_delete=models.CASCADE)
@@ -79,3 +89,4 @@ class IdentityNameAccess(models.Model):
     
     class Meta:
         unique_together = ('relationship_type', 'name_context')
+        ordering = ['id']

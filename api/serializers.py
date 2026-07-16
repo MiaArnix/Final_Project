@@ -294,11 +294,11 @@ class IdentitySerializer(serializers.ModelSerializer):
         
         # return all names if identity is public
         if identity.is_public:
-            return IdentityName.objects.filter(identity=identity).all()
+            return IdentityNameSerializer(IdentityName.objects.filter(identity=identity).all(), many=True).data
         
         # return all names if consumer is owner or superuser
         if identity.owner == consumer or consumer.is_superuser:
-            return IdentityName.objects.filter(identity=identity).all()
+            return IdentityNameSerializer(IdentityName.objects.filter(identity=identity).all(), many=True).data
         
         # check if consumer has relationship with identity
         relationship = IdentityRelationship.objects.filter(
