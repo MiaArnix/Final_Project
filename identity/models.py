@@ -1,6 +1,7 @@
 from django.db import models
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django_cryptography.fields import encrypt
 
 class Gender(models.Model):
     name = models.CharField(max_length=50, null=False, blank=False, unique=True)
@@ -24,7 +25,7 @@ class NameContext(models.Model):
 class IdentityName(models.Model):
     identity = models.ForeignKey(Identity, on_delete=models.CASCADE, related_name='names')
     name_context = models.ForeignKey(NameContext, on_delete=models.CASCADE)
-    name_value = models.CharField(max_length=100, null=False, blank=False)
+    name_value = encrypt(models.CharField(max_length=100, null=False, blank=False))
     is_default = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

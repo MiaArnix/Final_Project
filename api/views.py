@@ -1,5 +1,5 @@
 from rest_framework import viewsets, serializers
-from rest_framework.permissions import BasePermission, SAFE_METHODS
+from rest_framework.permissions import BasePermission, SAFE_METHODS, IsAuthenticatedOrReadOnly 
 from rest_framework.exceptions import PermissionDenied, NotFound
 from identity.models import Gender, NameContext, RelationshipType, IdentityNameAccess, Identity, IdentityRelationship, IdentityName
 from .serializers import (
@@ -35,15 +35,26 @@ class IdentityNamePermission(BasePermission):
     def has_permission(self, request, view):
         identity_id = view.kwargs.get('identity_pk')
         
-        identity = Identity.objects.get(pk=identity_id)
-        perm = 'identity.read_identity_name'
+        try:
+            identity = Identity.objects.get(pk=identity_id)
+        except Identity.DoesNotExist:
+            raise NotFound("Identity does not exist.")
+
+        if request.method in SAFE_METHODS:
+            perm = 'identity.read_identity_name'
+        else: 
+            perm = 'identity.write_identity_name'
             
         if not request.user.has_perm(perm, identity):
             raise PermissionDenied("You do not have permission to access this identity name.")
         return True
     
-    def has_object_permission(self, request, view, obj):
-        identity = obj.identity
+    def has_object_permission(self, request, view, name):
+        try:
+            identity = name.identity
+        except Identity.DoesNotExist:
+            raise NotFound("Identity does not exist.")
+
         if request.method in SAFE_METHODS:
             perm = 'identity.read_identity_name'
         else: 
@@ -58,9 +69,12 @@ class IdentityRelationshipPermission(BasePermission):
     def has_permission(self, request, view):
         identity_id = view.kwargs.get('identity_pk')
         
-        identity = Identity.objects.get(pk=identity_id)
-        perm = 'identity.read_identity_relationship'
-            
+        try:
+            identity = Identity.objects.get(pk=identity_id)
+        except Identity.DoesNotExist:
+            raise NotFound("Identity does not exist.")
+        
+        perm = 'identity.access_identity_relationship'    
         if not request.user.has_perm(perm, identity):
             raise PermissionDenied("You do not have permission to access this identity relationship.")
 
@@ -87,13 +101,13 @@ class MetadataPermission(BasePermission):
 class GenderViewSet(viewsets.ModelViewSet):
     queryset = Gender.objects.all()
     serializer_class = GenderSerializer
-    permission_classes = [MetadataPermission]
+    permission_classes = [MetadataPermission, IsAuthenticatedOrReadOnly]
 
 
 class NameContextViewSet(viewsets.ModelViewSet):
     queryset = NameContext.objects.all()
     serializer_class = NameContextSerializer
-    permission_classes = [MetadataPermission]
+    permission_classes = [MetadataPermission, IsAuthenticatedOrReadOnly]
 
 
 class RelationshipTypeViewSet(viewsets.ModelViewSet):
@@ -105,12 +119,12 @@ class RelationshipTypeViewSet(viewsets.ModelViewSet):
 class IdentityNameAccessViewSet(viewsets.ModelViewSet):
     queryset = IdentityNameAccess.objects.all()
     serializer_class = IdentityNameAccessSerializer
-    permission_classes = [MetadataPermission]
+    permission_classes = [MetadataPermission, IsAuthenticatedOrReadOnly]
     
 class IdentityViewSet(viewsets.ModelViewSet):
     queryset = Identity.objects.all()
     serializer_class = IdentitySerializer
-    permission_classes = [IdentityPermission]
+    permission_classes = [IdentityPermission, IsAuthenticatedOrReadOnly]
     
     def get_queryset(self):
         queryset = Identity.objects.all()
@@ -135,11 +149,16 @@ class IdentityViewSet(viewsets.ModelViewSet):
 class IdentityRelationshipViewSet(viewsets.ModelViewSet):
     queryset = IdentityRelationship.objects.all()
     serializer_class = IdentityRelationshipSerializer
-    permission_classes = [IdentityRelationshipPermission]
+    permission_classes = [IdentityRelationshipPermission, IsAuthenticatedOrReadOnly]
     
     def perform_create(self, serializer):
         identity_id = self.kwargs.get('identity_pk')
-        identity = Identity.objects.get(pk=identity_id)
+        
+        try:
+            identity = Identity.objects.get(pk=identity_id)
+        except Identity.DoesNotExist:
+            raise NotFound("Identity does not exist.")
+
         serializer.save(identity=identity)
     
     def get_queryset(self):
@@ -162,11 +181,16 @@ class IdentityRelationshipViewSet(viewsets.ModelViewSet):
 class IdentityNameViewSet(viewsets.ModelViewSet):
     queryset = IdentityName.objects.all()
     serializer_class = IdentityNameSerializer
-    permission_classes = [IdentityNamePermission]
+    permission_classes = [IdentityNamePermission, IsAuthenticatedOrReadOnly]
     
     def perform_create(self, serializer):
         identity_id = self.kwargs.get('identity_pk')
-        identity = Identity.objects.get(pk=identity_id)
+        
+        try: 
+            identity = Identity.objects.get(pk=identity_id)
+        except Identity.DoesNotExist:
+            raise NotFound("Identity does not exist.")
+
         serializer.save(identity=identity)
     
     def get_queryset(self):

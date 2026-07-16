@@ -292,13 +292,13 @@ class IdentitySerializer(serializers.ModelSerializer):
     def get_names(self, identity):
         consumer = self.context['request'].user
         
-        # return default name if identity is public
+        # return all names if identity is public
         if identity.is_public:
-            return IdentityNameSerializer(identity.names.filter(is_default=True), many=True).data
+            return IdentityName.objects.filter(identity=identity).all()
         
         # return all names if consumer is owner or superuser
         if identity.owner == consumer or consumer.is_superuser:
-            return IdentityNameSerializer(identity.names.all(), many=True).data
+            return IdentityName.objects.filter(identity=identity).all()
         
         # check if consumer has relationship with identity
         relationship = IdentityRelationship.objects.filter(
