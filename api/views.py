@@ -18,6 +18,8 @@ class IdentityPermission(BasePermission):
         return True
     
     def has_object_permission(self, request, view, obj):
+        if not request.user.is_authenticated and not obj.is_public:
+            raise PermissionDenied("You must be authenticated to access this identity.")
         if request.method in SAFE_METHODS:
             perm = 'identity.read_identity'
         elif request.method == 'DELETE':
@@ -89,7 +91,6 @@ class IdentityRelationshipPermission(BasePermission):
 
         return True
 
-
 class MetadataPermission(BasePermission):
     
     def has_permission(self, request, view):
@@ -103,18 +104,15 @@ class GenderViewSet(viewsets.ModelViewSet):
     serializer_class = GenderSerializer
     permission_classes = [MetadataPermission, IsAuthenticatedOrReadOnly]
 
-
 class NameContextViewSet(viewsets.ModelViewSet):
     queryset = NameContext.objects.all()
     serializer_class = NameContextSerializer
     permission_classes = [MetadataPermission, IsAuthenticatedOrReadOnly]
 
-
 class RelationshipTypeViewSet(viewsets.ModelViewSet):
     queryset = RelationshipType.objects.all()
     serializer_class = RelationshipTypeSerializer
     permission_classes = [MetadataPermission]
-
 
 class IdentityNameAccessViewSet(viewsets.ModelViewSet):
     queryset = IdentityNameAccess.objects.all()
@@ -128,24 +126,53 @@ class IdentityViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         queryset = Identity.objects.all()
-        consumer = self.request.user
         identity_id = self.request.query_params.get('pk')
-        
-        # filter by identity id if given
+    
         if identity_id:
             queryset = queryset.filter(id=identity_id)
             
-        # return public identities if not authenticated
-        if not consumer.is_authenticated:
-            return queryset.filter(is_public=True)
+        if self.action == 'list':
+            consumer = self.request.user
+            if consumer.is_authenticated:
+                public_identities = queryset.filter(is_public=True)
+                user_identities = queryset.filter(relationships__consumer=consumer)
+                owned_identities = queryset.filter(owner=consumer)
+                queryset = (public_identities | user_identities | owned_identities).distinct()
+            else:
+                queryset = queryset.filter(is_public=True)
+    
+        return queryset
+    
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)
         
-        # return public identities + the ones with relationship to consumer + the ones owned by consumer
-        public_identities = queryset.filter(is_public=True)
-        user_identities = queryset.filter(relationships__consumer=consumer)
-        owned_identities = queryset.filter(owner=consumer)
-
-        return (public_identities | user_identities | owned_identities).distinct()
-
+    def to_representation(self,instance):
+        data = super().to_representation(instance)
+        user = self.request.user
+        
+        # filter related entities based on access permissions
+        if instance.is_public or instance.owner == user or user.is_superuser:  
+            return data
+        
+        relationship = instance.relationships.filter(consumer=user).first()
+        
+        if not relationship:
+            data['names'] = []
+            return data
+        
+        allowed_contexts = IdentityNameAccess.objects.filter(relationship_type=relationship.relationship_type).values_list('name_context_id', flat=True)
+        
+        allowed_names = instance.identity_names.filter(name_context_id__in=allowed_contexts)
+        
+        if allowed_names.exists():
+            data['names'] = IdentityNameSerializer(allowed_names, many=True).data
+        else:
+            # Fall back to default name if no matches
+            default_name = instance.identity_names.filter(is_default=True).first()
+            data['names'] = IdentityNameSerializer([default_name], many=True).data if default_name else []
+        
+        return data
+     
 class IdentityRelationshipViewSet(viewsets.ModelViewSet):
     queryset = IdentityRelationship.objects.all()
     serializer_class = IdentityRelationshipSerializer

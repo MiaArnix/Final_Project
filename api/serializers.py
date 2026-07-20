@@ -9,18 +9,35 @@ class GenderSerializer(serializers.ModelSerializer):
         model = Gender
         fields = ['id', 'name']
 
-
 class NameContextSerializer(serializers.ModelSerializer):
     class Meta:
         model = NameContext
         fields = ['id', 'name']
-
 
 class RelationshipTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = RelationshipType
         fields = ['id', 'name']
 
+class IdentityNameAccessSerializer(serializers.ModelSerializer):
+    relationship_type = serializers.CharField(
+        source='relationship_type.name', read_only=True
+    )
+    name_context = serializers.CharField(
+        source='name_context.name', read_only=True
+    )
+    
+    relationship_type_id = serializers.PrimaryKeyRelatedField(
+        queryset=RelationshipType.objects.all(), source='relationship_type', write_only=True
+    )
+    name_context_id = serializers.PrimaryKeyRelatedField(
+        queryset=NameContext.objects.all(), source='name_context', write_only=True
+    )
+
+    class Meta:
+        model = IdentityNameAccess
+        fields = ['id', 'relationship_type', 'name_context', 'relationship_type_id', 'name_context_id']
+        read_only_fields = ['id', 'relationship_type', 'name_context']
 
 class IdentityNameSerializer(serializers.ModelSerializer):
     name_context = serializers.CharField(source='name_context.name', read_only=True, required=False)
@@ -29,11 +46,15 @@ class IdentityNameSerializer(serializers.ModelSerializer):
         queryset=NameContext.objects.all(), source='name_context', write_only=True, required=False
     )
     
+    identity_id = serializers.PrimaryKeyRelatedField(
+        queryset=Identity.objects.all(), source='identity', write_only=True, required=False
+    )
+    
     name_value = serializers.CharField(required=False)
     
     class Meta:
         model = IdentityName
-        fields = ['id', 'identity', 'name_value', 'name_context', 'name_context_id', 'is_default']
+        fields = ['id', 'identity', 'identity_id', 'name_value', 'name_context', 'name_context_id', 'is_default']
         read_only_fields = ['id', 'identity', 'name_context']
         
     def validate(self, data):
@@ -41,12 +62,15 @@ class IdentityNameSerializer(serializers.ModelSerializer):
         name_context = data.get('name_context')
         name_value = data.get('name_value')
         is_default = data.get('is_default')
+        identity = data.get('identity')
         
         if is_create_action:
-            if not name_context or not name_value:
-                raise serializers.ValidationError("Both 'name_context_id' and 'name_value' fields are required.")
-            if name_context not in NameContext.objects.all():
-                raise serializers.ValidationError("Invalid name context.")
+            if not identity:
+                raise serializers.ValidationError({'identity_id': 'This field is required.'})
+            if not name_context:
+                raise serializers.ValidationError({'name_context_id': 'This field is required.'})
+            if not name_value:
+                raise serializers.ValidationError({'name_value': 'This field is required.'})
             if is_default is True and IdentityName.objects.filter(identity=data.get('identity'), is_default=True).exists():
                 raise serializers.ValidationError("Only one default name is allowed.")
         else:
@@ -106,14 +130,19 @@ class IdentityRelationshipSerializer(serializers.ModelSerializer):
     accessible_names = serializers.SerializerMethodField(read_only=True)
     
     # fields for create and update actions
-    consumer = serializers.CharField(write_only=True, required=False)
+    consumer = serializers.PrimaryKeyRelatedField(
+        queryset=AuthUser.objects.all(), write_only=True, required=False
+    )
     relationship_type_id = serializers.PrimaryKeyRelatedField(
         queryset=RelationshipType.objects.all(), source='relationship_type', write_only=True
+    )
+    identity_id = serializers.PrimaryKeyRelatedField(
+        queryset=Identity.objects.all(), source='identity', write_only=True, required=False
     )
     
     class Meta:
         model = IdentityRelationship
-        fields = ['id', 'identity_owner', 'identity', 'consumer', 'consumer_username', 'relationship_type', 'relationship_type_id', 'accessible_names']
+        fields = ['id', 'identity_owner', 'identity', 'identity_id', 'consumer', 'consumer_username', 'relationship_type', 'relationship_type_id', 'accessible_names']
         read_only_fields = ['id', 'identity', 'identity_owner', 'consumer_username', 'accessible_names', 'relationship_type']
         
     def get_accessible_names(self, obj):
@@ -140,13 +169,11 @@ class IdentityRelationshipSerializer(serializers.ModelSerializer):
         relationship_type = data.get('relationship_type')
         
         if is_create_action:
-            consumer_username = data.get('consumer')
-            identity_pk = self.context['view'].kwargs.get('identity_pk')
-            identity = Identity.objects.get(pk=identity_pk)
-            consumer = AuthUser.objects.filter(username=consumer_username).first()
-            
-            if consumer_username is None or relationship_type is None:
-                raise serializers.ValidationError("Consumer, and relationship type fields are required.")
+            consumer = data.get('consumer')
+            identity = data.get('identity')
+           
+            if consumer is None or relationship_type is None or identity is None:
+                raise serializers.ValidationError("Consumer, identity and relationship type fields are required.")
             if consumer is None:
                 raise serializers.ValidationError("Consumer does not exist.")
             if identity.owner == consumer:
@@ -185,31 +212,11 @@ class IdentityRelationshipSerializer(serializers.ModelSerializer):
         
         instance.save()
         return instance
-
-class IdentityNameAccessSerializer(serializers.ModelSerializer):
-    relationship_type = serializers.CharField(
-        source='relationship_type.name', read_only=True
-    )
-    name_context = serializers.CharField(
-        source='name_context.name', read_only=True
-    )
-    
-    relationship_type_id = serializers.PrimaryKeyRelatedField(
-        queryset=RelationshipType.objects.all(), source='relationship_type', write_only=True
-    )
-    name_context_id = serializers.PrimaryKeyRelatedField(
-        queryset=NameContext.objects.all(), source='name_context', write_only=True
-    )
-
-    class Meta:
-        model = IdentityNameAccess
-        fields = ['id', 'relationship_type', 'name_context', 'relationship_type_id', 'name_context_id']
-        read_only_fields = ['id', 'relationship_type', 'name_context']
-        
+  
 class IdentitySerializer(serializers.ModelSerializer):
     owner = serializers.CharField(source='owner.username', read_only=True)
     gender = serializers.CharField(source='gender.name', read_only=True)
-    names = serializers.SerializerMethodField(read_only=True)
+    names = IdentityNameSerializer('names', many=True, read_only=True)  
     
     gender_id = serializers.PrimaryKeyRelatedField(
         queryset=Gender.objects.all(), write_only=True, required=False
@@ -219,26 +226,38 @@ class IdentitySerializer(serializers.ModelSerializer):
         child=serializers.DictField(), write_only=True, required=False
     )
     
+    owner_id = serializers.PrimaryKeyRelatedField(
+        queryset=AuthUser.objects.all(), source='owner', write_only=True, required=False)
+    
     class Meta:
         model = Identity
-        fields = ['id', 'owner', 'gender', 'names', 'gender_id', 'is_public', 'names_list']
-        read_only_fields = ['id', 'owner']
+        fields = ['id', 'owner', 'owner_id', 'gender', 'names', 'gender_id', 'is_public', 'names_list']
+        read_only_fields = ['id', 'owner', 'names']
         
     def validate(self, data):
         is_create_action = self.instance is None
         names_list = data.get('names_list', [])
         gender_id = data.get('gender_id')
         is_public = data.get('is_public')
+        owner = data.get('owner')
         
         if is_create_action:
-            if gender_id is None or is_public is None:
-                raise serializers.ValidationError("'gender_id' and 'is_public' fields are required.")
+            if not owner:
+                raise serializers.ValidationError({'owner_id': 'This field is required.'})
+            if not gender_id:
+                raise serializers.ValidationError({'gender_id': 'This field is required.'})
+            if not is_public:
+                raise serializers.ValidationError({'is_public': 'This field is required.'})
             if not names_list:
-                raise serializers.ValidationError("At least one name must be provided.")
+                raise serializers.ValidationError({'names_list': 'At least one name must be provided.'})
         
             default_names = [name for name in names_list if name.get('is_default')]
             if len(default_names) != 1:
                 raise serializers.ValidationError("Exactly one default name must be provided.")
+            
+            contexts = [name.get('name_context_id') for name in names_list]
+            if len(contexts) != len(set(contexts)):
+                raise serializers.ValidationError("Duplicate name contexts are not allowed in names_list.")
         
         return data
     
@@ -246,6 +265,7 @@ class IdentitySerializer(serializers.ModelSerializer):
         gender = validated_data.get('gender_id')
         is_public = validated_data.get('is_public')
         names_list = validated_data.get('names_list')
+        owner = validated_data.get('owner')
         
         if not names_list or len(names_list) == 0:
             raise serializers.ValidationError({
@@ -253,15 +273,13 @@ class IdentitySerializer(serializers.ModelSerializer):
         })
         
         identity = Identity.objects.create(
-            owner=self.context['request'].user,
-            gender=gender,
-            is_public=is_public
+            owner=owner, gender=gender, is_public=is_public
         )
         
-        for name_data in names_list:
-            name_context_id = name_data.get('name_context_id')
-            name_value = name_data.get('name_value')
-            is_default = name_data.get('is_default', False)
+        for name in names_list:
+            name_context_id = name.get('name_context_id')
+            name_value = name.get('name_value')
+            is_default = name.get('is_default', False)
             
             if not name_context_id or not name_value:
                 raise serializers.ValidationError("Each name must have a 'name_context_id' and 'name_value'.")
@@ -288,42 +306,3 @@ class IdentitySerializer(serializers.ModelSerializer):
 
         instance.save()
         return instance
-    
-    def get_names(self, identity):
-        consumer = self.context['request'].user
-        
-        # return all names if identity is public
-        if identity.is_public:
-            return IdentityNameSerializer(IdentityName.objects.filter(identity=identity).all(), many=True).data
-        
-        # return all names if consumer is owner or superuser
-        if identity.owner == consumer or consumer.is_superuser:
-            return IdentityNameSerializer(IdentityName.objects.filter(identity=identity).all(), many=True).data
-        
-        # check if consumer has relationship with identity
-        relationship = IdentityRelationship.objects.filter(
-            identity=identity,
-            consumer=consumer
-        ).first()
-        
-        # return empty list if no relationship found
-        if not relationship:
-            return []
-        
-        # get allowed name contexts for the relationship type
-        allowed_contexts = IdentityNameAccess.objects.filter(
-        relationship_type=relationship.relationship_type).values_list('name_context', flat=True)
-        
-        # filter identity names by allowed name contexts
-        allowed_names = identity.names.filter(name_context_id__in=allowed_contexts)
-        
-        # if at this point there is no name available, return the default name if exists
-        if not allowed_names.exists():
-            default_name = identity.names.filter(is_default=True).first()
-            if default_name:
-                return IdentityNameSerializer([default_name], many=True).data
-            else:
-                return []
-        
-        return IdentityNameSerializer(allowed_names, many=True).data
-    

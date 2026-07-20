@@ -19,6 +19,9 @@ class Identity(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     is_public = models.BooleanField(default=False)
     
+    class Meta:
+        ordering = ['id']
+    
 class NameContext(models.Model):
     name = models.CharField(max_length=100, null=False, blank=False, unique=True)
     
