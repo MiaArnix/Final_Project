@@ -216,7 +216,7 @@ class IdentityRelationshipSerializer(serializers.ModelSerializer):
 class IdentitySerializer(serializers.ModelSerializer):
     owner = serializers.CharField(source='owner.username', read_only=True)
     gender = serializers.CharField(source='gender.name', read_only=True)
-    names = IdentityNameSerializer('names', many=True, read_only=True)  
+    names = IdentityNameSerializer(many=True, read_only=True)  
     
     gender_id = serializers.PrimaryKeyRelatedField(
         queryset=Gender.objects.all(), write_only=True, required=False

@@ -146,32 +146,31 @@ class IdentityViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
         
-    def to_representation(self,instance):
-        data = super().to_representation(instance)
-        user = self.request.user
+    def retrieve(self, request, *args, **kwargs):
+        response = super().retrieve(request, *args, **kwargs)
+        instance = self.get_object()
+        user = request.user
         
         # filter related entities based on access permissions
         if instance.is_public or instance.owner == user or user.is_superuser:  
-            return data
+            return response
         
         relationship = instance.relationships.filter(consumer=user).first()
         
         if not relationship:
-            data['names'] = []
-            return data
-        
-        allowed_contexts = IdentityNameAccess.objects.filter(relationship_type=relationship.relationship_type).values_list('name_context_id', flat=True)
-        
-        allowed_names = instance.identity_names.filter(name_context_id__in=allowed_contexts)
-        
-        if allowed_names.exists():
-            data['names'] = IdentityNameSerializer(allowed_names, many=True).data
+            response.data['names'] = []
         else:
-            # Fall back to default name if no matches
-            default_name = instance.identity_names.filter(is_default=True).first()
-            data['names'] = IdentityNameSerializer([default_name], many=True).data if default_name else []
+            allowed_contexts = IdentityNameAccess.objects.filter(relationship_type=relationship.relationship_type).values_list('name_context_id', flat=True)
         
-        return data
+            allowed_names = instance.names.filter(name_context_id__in=allowed_contexts)
+        
+            if allowed_names.exists():
+                response.data['names'] = IdentityNameSerializer(allowed_names, many=True).data
+            else:
+                # fall back to default name if no matches
+                default_name = instance.names.filter(is_default=True).first()
+                response.data['names'] = IdentityNameSerializer([default_name], many=True).data if default_name else []
+        return response
      
 class IdentityRelationshipViewSet(viewsets.ModelViewSet):
     queryset = IdentityRelationship.objects.all()

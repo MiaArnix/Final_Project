@@ -1091,8 +1091,56 @@ class IdentityNameAccessTestCase(APITestCase):
         response = self.client.delete(self.buildUrl(id=self.identity_name_access.id))
         
         self.assertEqual(response.status_code, 401)
-      
-class IdentityTestCase(APITestCase):
+
+class IdentityNameAPITestCase(APITestCase):
+    identity1 = None
+    gender = None
+    name_context1 = None
+    name_context2 = None
+    identity_name1 = None
+    identity_name2 = None
+    relationship_type = None
+    identity_relationship = None
+    name_access = None
+    owner = None
+    superuser = None
+    user = None
+    
+    def setUp(self):
+        self.superuser = UserFactory.create(username="superuser", password="testpassword", is_superuser=True)
+        self.user = UserFactory.create(username="user", password="testpassword")
+        self.owner = UserFactory.create(username="owner", password="testpassword")
+        
+        self.gender = GenderFactory.create(name="Male")
+        self.name_context1 = NameContextFactory.create(name="First Name")
+        self.name_context2 = NameContextFactory.create(name="Last Name")
+        self.relationship_type = RelationshipTypeFactory.create(name="Parent")
+        self.name_access = IdentityNameAccessFactory.create(relationship_type=self.relationship_type, name_context=self.name_context)
+        
+        self.identity1 = IdentityFactory.create(owner=self.owner, gender=self.gender, is_public=False)
+        self.identity_name1 = IdentityNameFactory.create(identity=self.identity1, name_context=self.name_context1, name_value="John", is_default=False)
+        self.identity1_name2 = IdentityNameFactory.create(identity=self.identity1, name_context=self.name_context2, name_value="Doe", is_default=True) 
+        self.identity_relationship = IdentityRelationshipFactory.create(identity=self.identity1, consumer=self.user, relationship_type=self.relationship_type)
+        
+    def buildUrl(self, id=None):
+        if id is not None:
+            return reverse('identity-name-detail', kwargs={'pk': id})
+        return reverse('identity-name-list')
+    
+    def tearDown(self):
+        IdentityName.objects.all().delete()
+        Identity.objects.all().delete()
+        NameContext.objects.all().delete()
+        AuthUser.objects.all().delete()
+        
+        IdentityNameFactory.reset_sequence()
+        IdentityFactory.reset_sequence()
+        NameContextFactory.reset_sequence()
+        UserFactory.reset_sequence()
+        
+
+
+class IdentityAPITestCase(APITestCase):
     owner1 = None
     consumer1 = None
     consumer2 = None
@@ -1144,10 +1192,8 @@ class IdentityTestCase(APITestCase):
         self.relationship_type_friend = RelationshipTypeFactory.create(name="Friend")    
         
         self.access_work = IdentityNameAccessFactory.create(relationship_type=self.relationship_type_colleague, name_context=self.name_context_work)
-        self.access_school = IdentityNameAccessFactory.create(relationship_type=self.relationship_type_teacher, name_context=self.name_context_school)
         self.access_friend = IdentityNameAccessFactory.create(relationship_type=self.relationship_type_friend, name_context=self.name_context_personal)
         self.access_family = IdentityNameAccessFactory.create(relationship_type=self.relationship_type_parent, name_context=self.name_context_personal)
-            
         
         self.identity1 = IdentityFactory.create(owner=self.owner1, gender=self.gender, is_public=False)
         self.identity_name_work = IdentityName.objects.create(
@@ -1324,6 +1370,15 @@ class IdentityTestCase(APITestCase):
         self.assertEqual(response.data['names'][0]['name_context'], self.name_context_personal.name)
         self.assertEqual(response.data['names'][0]['name_value'], "Personal Name")
         
+    def test_defaultNameReturnedWhenRelatedConsumerButNoRules(self):
+        self.client.force_authenticate(user=self.consumer2)
+        response = self.client.get(self.build_url(id=self.identity1.id))
+        
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data['names']), 1)
+        self.assertEqual(response.data['names'][0]['name_context'], self.name_context_work.name)
+        self.assertEqual(response.data['names'][0]['name_value'], "Work Name")
+        
     def test_allNamesReturnedForOwner(self):
         self.client.force_authenticate(user=self.owner1)
         response = self.client.get(self.build_url(id=self.identity1.id))
@@ -1420,4 +1475,4 @@ class IdentityTestCase(APITestCase):
         response = self.client.delete(self.build_url(id=self.identity1.id))
         self.assertEqual(response.status_code, 403)
                 
-        
+      
