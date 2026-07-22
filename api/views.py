@@ -133,6 +133,8 @@ class IdentityViewSet(viewsets.ModelViewSet):
             
         if self.action == 'list':
             consumer = self.request.user
+            if consumer.is_superuser:
+                return queryset
             if consumer.is_authenticated:
                 public_identities = queryset.filter(is_public=True)
                 user_identities = queryset.filter(relationships__consumer=consumer)
@@ -177,15 +179,10 @@ class IdentityRelationshipViewSet(viewsets.ModelViewSet):
     serializer_class = IdentityRelationshipSerializer
     permission_classes = [IdentityRelationshipPermission, IsAuthenticatedOrReadOnly]
     
-    def perform_create(self, serializer):
-        identity_id = self.kwargs.get('identity_pk')
-        
-        try:
-            identity = Identity.objects.get(pk=identity_id)
-        except Identity.DoesNotExist:
-            raise NotFound("Identity does not exist.")
-
-        serializer.save(identity=identity)
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['identity_pk'] = self.kwargs.get('identity_pk')
+        return context
     
     def get_queryset(self):
         user = self.request.user
@@ -194,6 +191,13 @@ class IdentityRelationshipViewSet(viewsets.ModelViewSet):
         # filter by identity owner - only return relationships for identities owned by user
         identity_id = self.kwargs.get('identity_pk')
         relationship_id = self.kwargs.get('pk')
+        
+        if user.is_superuser:
+            if relationship_id and identity_id:
+                queryset = queryset.filter(id=relationship_id, identity_id=identity_id)
+            if identity_id:
+                queryset = queryset.filter(identity_id=identity_id)
+            return queryset
         
         if relationship_id and identity_id:
             queryset = queryset.filter(id=relationship_id, identity_id=identity_id, identity__owner=user)
@@ -208,16 +212,11 @@ class IdentityNameViewSet(viewsets.ModelViewSet):
     queryset = IdentityName.objects.all()
     serializer_class = IdentityNameSerializer
     permission_classes = [IdentityNamePermission, IsAuthenticatedOrReadOnly]
-    
-    def perform_create(self, serializer):
-        identity_id = self.kwargs.get('identity_pk')
-        
-        try: 
-            identity = Identity.objects.get(pk=identity_id)
-        except Identity.DoesNotExist:
-            raise NotFound("Identity does not exist.")
 
-        serializer.save(identity=identity)
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['identity_pk'] = self.kwargs.get('identity_pk')
+        return context
     
     def get_queryset(self):
         identity_id = self.kwargs.get('identity_pk')
