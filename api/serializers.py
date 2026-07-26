@@ -259,8 +259,6 @@ class IdentitySerializer(serializers.ModelSerializer):
         if is_create_action:
             if not owner:
                 raise serializers.ValidationError({'owner_id': 'This field is required.'})
-            if not gender_id:
-                raise serializers.ValidationError({'gender_id': 'This field is required.'})
             if is_public is None:
                 raise serializers.ValidationError({'is_public': 'This field is required.'})
             if not names_list:
@@ -277,7 +275,7 @@ class IdentitySerializer(serializers.ModelSerializer):
         return data
     
     def create(self, validated_data):
-        gender = validated_data.get('gender_id')
+        gender = validated_data.get('gender_id', None)
         is_public = validated_data.get('is_public')
         names_list = validated_data.get('names_list')
         owner = validated_data.get('owner')
