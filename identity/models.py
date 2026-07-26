@@ -1,10 +1,11 @@
 from django.db import models
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.core.validators import MinLengthValidator
 from django_cryptography.fields import encrypt
 
 class Gender(models.Model):
-    name = models.CharField(max_length=50, null=False, blank=False, unique=True)
+    name = models.CharField(max_length=50, null=False, blank=False, unique=True, validators=[MinLengthValidator(3)])
 
     def __str__(self):
         return self.name
@@ -13,17 +14,20 @@ class Gender(models.Model):
         ordering = ['id']
 
 class Identity(models.Model):
-    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)  
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, null=False, on_delete=models.CASCADE)  
     gender = models.ForeignKey(Gender, on_delete=models.SET_NULL, null=True)  
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     is_public = models.BooleanField(default=False)
     
+    def __str__(self):
+        return f"Identity {self.id} - Owner: {self.owner.username}"
+    
     class Meta:
         ordering = ['id']
     
 class NameContext(models.Model):
-    name = models.CharField(max_length=100, null=False, blank=False, unique=True)
+    name = models.CharField(max_length=100, null=False, blank=False, unique=True, validators=[MinLengthValidator(3)])
     
     def __str__(self):
         return self.name
@@ -59,7 +63,7 @@ class IdentityName(models.Model):
         ordering = ['id']
         
 class RelationshipType(models.Model):
-    name = models.CharField(max_length=50, null=False, blank=False, unique=True)
+    name = models.CharField(max_length=50, null=False, blank=False, unique=True, validators=[MinLengthValidator(3)])
 
     def __str__(self):
         return self.name
@@ -72,7 +76,7 @@ class IdentityRelationship(models.Model):
                                 related_name='relationships')
     consumer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
                                 related_name='accessible_identities')
-    relationship_type = models.ForeignKey(RelationshipType, on_delete=models.PROTECT, null=True)
+    relationship_type = models.ForeignKey(RelationshipType, on_delete=models.PROTECT, null=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
