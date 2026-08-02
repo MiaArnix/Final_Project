@@ -364,6 +364,33 @@ class IdentityNameSerializerTestCase(APITestCase):
         self.assertEqual(self.identity_name3.is_default, False)
         self.assertEqual(IdentityName.objects.filter(identity=self.identity2, is_default=True).count(), 1)
 
+    def test_itIsNotPossibleToUpdateIsDefaultToFalseOnTheDefaultName(self):
+        serializer = IdentityNameSerializer(instance=self.identity_name3, context={'identity_pk': self.identity2.id}, data={'is_default': False}, partial=True)
+
+        self.assertFalse(serializer.is_valid())
+        self.assertIn('Cannot unset the default name. Set another name as default instead.', str(serializer.errors))
+
+        self.identity_name3.refresh_from_db()
+        self.assertEqual(self.identity_name3.is_default, True)
+        self.assertEqual(IdentityName.objects.filter(identity=self.identity2, is_default=True).count(), 1)
+
+    def test_itIsPossibleToUpdateIsDefaultToFalseOnANonDefaultName(self):
+        serializer = IdentityNameSerializer(instance=self.identity_name2, context={'identity_pk': self.identity2.id}, data={'is_default': False}, partial=True)
+
+        self.assertTrue(serializer.is_valid())
+        self.assertEqual(serializer.save().is_default, False)
+        self.assertEqual(IdentityName.objects.filter(identity=self.identity2, is_default=True).count(), 1)
+
+    def test_hasToPromoteAnotherNameToRemoveDefault(self):
+        serializer = IdentityNameSerializer(instance=self.identity_name2, context={'identity_pk': self.identity2.id}, data={'is_default': True}, partial=True)
+
+        self.assertTrue(serializer.is_valid())
+        serializer.save()
+        self.identity_name3.refresh_from_db()
+
+        self.assertEqual(self.identity_name3.is_default, False)
+        self.assertEqual(IdentityName.objects.filter(identity=self.identity2, is_default=True).count(), 1)
+
 class IdentityRelationshipSerializerTestCase(APITestCase):
     relationship_type = None
     relationship_type2 = None
@@ -417,14 +444,65 @@ class IdentityRelationshipSerializerTestCase(APITestCase):
         
         self.assertEqual(updated_relationship.relationship_type, self.relationship_type)
         
-    def test_consumerUsernameFieldIsReadOnly(self):
-        serializer = IdentityRelationshipSerializer(instance=self.identity_relationship, context={'identity_pk': self.identity.id}, data={'consumer_username': 'new_consumer'}, partial=True)
-        
+    def test_consumerIsReadOnly(self):
+        serializer = IdentityRelationshipSerializer(instance=self.identity_relationship, context={'identity_pk': self.identity.id}, data={'consumer_username': self.consumer2.username}, partial=True)
+
         self.assertTrue(serializer.is_valid())
         updated_relationship = serializer.save()
-        
+
         self.assertEqual(updated_relationship.consumer, self.consumer)
-        
+
+    def test_createRelationshipWithConsumerUsername(self):
+        serializer = IdentityRelationshipSerializer(
+            context={'identity_pk': self.identity.id},
+            data={'consumer_username': self.consumer2.username, 'relationship_type_id': self.relationship_type.id}
+        )
+
+        self.assertTrue(serializer.is_valid())
+        new_relationship = serializer.save()
+
+        self.assertEqual(new_relationship.consumer, self.consumer2)
+        self.assertEqual(new_relationship.identity, self.identity)
+
+    def test_createRelationshipWithUnknownConsumerUsername(self):
+        serializer = IdentityRelationshipSerializer(
+            context={'identity_pk': self.identity.id},
+            data={'consumer_username': 'nobody_by_that_name', 'relationship_type_id': self.relationship_type.id}
+        )
+
+        self.assertFalse(serializer.is_valid())
+        self.assertIn('consumer_username', serializer.errors)
+
+    def test_createRelationshipRequiresConsumerIdOrUsername(self):
+        serializer = IdentityRelationshipSerializer(
+            context={'identity_pk': self.identity.id},
+            data={'relationship_type_id': self.relationship_type.id}
+        )
+
+        self.assertFalse(serializer.is_valid())
+        self.assertIn('Consumer (consumer_id or consumer_username), identity and relationship type fields are required.', str(serializer.errors))
+
+    def test_createRelationshipAcceptsConsumerIdAndUsernameWhenTheyAgree(self):
+        serializer = IdentityRelationshipSerializer(
+            context={'identity_pk': self.identity.id},
+            data={'consumer_id': self.consumer2.id, 'consumer_username': self.consumer2.username, 'relationship_type_id': self.relationship_type.id}
+        )
+
+        self.assertTrue(serializer.is_valid())
+        self.assertEqual(serializer.save().consumer, self.consumer2)
+
+    def test_createRelationshipRejectsConflictingConsumerIdAndUsername(self):
+        serializer = IdentityRelationshipSerializer(
+            context={'identity_pk': self.identity.id},
+            data={'consumer_id': self.consumer2.id, 'consumer_username': self.consumer.username, 'relationship_type_id': self.relationship_type.id}
+        )
+
+        self.assertFalse(serializer.is_valid())
+        self.assertIn('Consumer_id and consumer_username refer to different users.', str(serializer.errors))
+
+    def test_consumerUsernameIsReturnedOnRead(self):
+        self.assertEqual(self.identity_relationship_serializer.data['consumer_username'], self.consumer.username)
+
     def test_identityOwnerFieldIsReadOnly(self):
         serializer = IdentityRelationshipSerializer(instance=self.identity_relationship, context={'identity_pk': self.identity.id}, data={'identity_owner': 'new_owner'}, partial=True)
         
@@ -546,8 +624,16 @@ class IdentityRelationshipSerializerTestCase(APITestCase):
         serializer = IdentityRelationshipSerializer(instance=self.identity_relationship, context={'identity_pk': self.identity.id}, data={'consumer_id': self.consumer2.id}, partial=True)
         self.assertTrue(serializer.is_valid())
         updated_relationship = serializer.save()
-        
+
         self.assertEqual(updated_relationship.consumer, self.consumer)
+
+    def test_updateWithSameConsumer(self):
+        serializer = IdentityRelationshipSerializer(instance=self.identity_relationship, context={'identity_pk': self.identity.id}, data={'consumer_id': self.consumer.id, 'relationship_type_id': self.relationship_type2.id}, partial=True)
+        self.assertTrue(serializer.is_valid())
+        updated_relationship = serializer.save()
+
+        self.assertEqual(updated_relationship.consumer, self.consumer)
+        self.assertEqual(updated_relationship.relationship_type, self.relationship_type2)
 
 class IdentitySerializerTestCase(APITestCase):
     owner = None
@@ -581,6 +667,13 @@ class IdentitySerializerTestCase(APITestCase):
         UserFactory.reset_sequence()
         GenderFactory.reset_sequence()
         NameContextFactory.reset_sequence()
+        
+    # helper for request
+    def make_request(self, user):
+        factory = APIRequestFactory()
+        request = factory.post('/')
+        request.user = user
+        return request
         
     def test_ownerIsReadOnly(self):
         serializer = IdentitySerializer(instance=self.identity, data={'owner': self.owner2.username}, partial=True)
@@ -621,47 +714,96 @@ class IdentitySerializerTestCase(APITestCase):
         data = self.identity_serializer.data
         self.assertNotIn('names_list', data)
         
-    def test_createIdentityRequiresOwnerAndIsPublicAndGenderIdAndNamesList(self):
-        serializer = IdentitySerializer(data={'owner_id': self.owner.id, 'is_public': True, 'gender_id': self.gender.id})
+    def test_createIdentityRequiresNamesListWithExactlyOneDefault(self):
+        serializer = IdentitySerializer(data={'is_public': True, 'gender_id': self.gender.id})
         self.assertFalse(serializer.is_valid())
-        
-        serializer = IdentitySerializer(data={'owner_id': self.owner.id, 'is_public': True, 'names_list': [{'name_context_id': self.name_context.id, 'name_value': 'New Name'}]})
+        self.assertIn('At least one name must be provided.', str(serializer.errors))
+
+        serializer = IdentitySerializer(data={'is_public': True, 'gender_id': self.gender.id, 'names_list': []})
         self.assertFalse(serializer.is_valid())
-        
-        serializer = IdentitySerializer(data={'owner_id': self.owner.id, 'gender_id': self.gender.id, 'names_list': [{'name_context_id': self.name_context.id, 'name_value': 'New Name'}]})
+
+        serializer = IdentitySerializer(data={'is_public': True, 'gender_id': self.gender.id, 'names_list': [{'name_context_id': self.name_context.id, 'name_value': 'New Name'}]})
         self.assertFalse(serializer.is_valid())
-        
-        serializer = IdentitySerializer(data={'is_public': True, 'gender_id': self.gender.id, 'names_list': [{'name_context_id': self.name_context.id, 'name_value': 'New Name'}]})      
-        self.assertFalse(serializer.is_valid())
-        
-        serializer = IdentitySerializer(data={'owner_id': self.owner.id, 'is_public': True, 'gender_id': self.gender.id, 'names_list': [{'name_context_id': self.name_context.id, 'name_value': 'New Name', 'is_default': True}]})
+        self.assertIn('Exactly one default name must be provided.', str(serializer.errors))
+
+        serializer = IdentitySerializer(data={'is_public': True, 'gender_id': self.gender.id, 'names_list': [{'name_context_id': self.name_context.id, 'name_value': 'New Name', 'is_default': True}]})
         self.assertTrue(serializer.is_valid())
-        
+
+    def test_createIdentityWithoutIsPublicDefaultsToFalse(self):
+        request = self.make_request(self.owner)
+        serializer = IdentitySerializer(context={'request': request}, data={'gender_id': self.gender.id, 'names_list': [{'name_context_id': self.name_context.id, 'name_value': 'New Name', 'is_default': True}]})
+        self.assertTrue(serializer.is_valid())
+
+        new_identity = serializer.save()
+        self.assertEqual(new_identity.is_public, False)
+
+    def test_createIdentityRejectsNullIsPublic(self):
+        serializer = IdentitySerializer(data={'is_public': None, 'gender_id': self.gender.id, 'names_list': [{'name_context_id': self.name_context.id, 'name_value': 'New Name', 'is_default': True}]})
+        self.assertFalse(serializer.is_valid())
+        self.assertIn('is_public', serializer.errors)
+
     def test_createIdentityRequiresAtLeastOneDefaultName(self):
-        serializer = IdentitySerializer(data={'owner_id': self.owner.id, 'is_public': True, 'gender_id': self.gender.id, 'names_list': [{'name_context_id': self.name_context.id, 'name_value': 'New Name', 'is_default': False}]})
+        serializer = IdentitySerializer(data={'is_public': True, 'gender_id': self.gender.id, 'names_list': [{'name_context_id': self.name_context.id, 'name_value': 'New Name', 'is_default': False}]})
         self.assertFalse(serializer.is_valid())
         
     def test_createIdentityRequiresUniqueNameContexts(self):
-        serializer = IdentitySerializer(data={'owner_id': self.owner.id, 'is_public': True, 'gender_id': self.gender.id, 'names_list': [{'name_context_id': self.name_context.id, 'name_value': 'New Name 1', 'is_default': True}, {'name_context_id': self.name_context.id, 'name_value': 'New Name 2', 'is_default': False}]})
+        serializer = IdentitySerializer(data={'is_public': True, 'gender_id': self.gender.id, 'names_list': [{'name_context_id': self.name_context.id, 'name_value': 'New Name 1', 'is_default': True}, {'name_context_id': self.name_context.id, 'name_value': 'New Name 2', 'is_default': False}]})
         self.assertFalse(serializer.is_valid())
         
     def test_createIdentityRequiresValidGenderId(self):
-        serializer = IdentitySerializer(data={'owner_id': self.owner.id, 'is_public': True, 'gender_id': 9999, 'names_list': [{'name_context_id': self.name_context.id, 'name_value': 'New Name', 'is_default': True}]})
+        serializer = IdentitySerializer(data={'is_public': True, 'gender_id': 9999, 'names_list': [{'name_context_id': self.name_context.id, 'name_value': 'New Name', 'is_default': True}]})
         self.assertFalse(serializer.is_valid())
         
-    def test_createIdentityRequiresValidOwnerId(self):
-        serializer = IdentitySerializer(data={'owner_id': 9999, 'is_public': True, 'gender_id': self.gender.id, 'names_list': [{'name_context_id': self.name_context.id, 'name_value': 'New Name', 'is_default': True}]})
+    def test_createIdentityRequiresKnownNameContextId(self):
+        serializer = IdentitySerializer(data={'is_public': True, 'gender_id': self.gender.id, 'names_list': [{'name_context_id': 9999999, 'name_value': 'New Name', 'is_default': True}]})
         self.assertFalse(serializer.is_valid())
+        self.assertIn('Unknown name_context_id', str(serializer.errors))
+
+    def test_createIdentityRequiresNameValueInNamesList(self):
+        serializer = IdentitySerializer(data={'is_public': True, 'gender_id': self.gender.id, 'names_list': [{'name_context_id': self.name_context.id, 'is_default': True}]})
+        self.assertFalse(serializer.is_valid())
+        self.assertIn("Each name must have a 'name_context_id' and 'name_value'.", str(serializer.errors))
+
+    def test_createIdentityDoesNotLeaveEmptyIdentityWhenANameFails(self):
+        request = self.make_request(self.owner)
+        identities_before = Identity.objects.count()
+        serializer = IdentitySerializer(context={'request': request}, data={'is_public': True, 'gender_id': self.gender.id, 'names_list': [{'name_context_id': 9999999, 'name_value': 'New Name', 'is_default': True}]})
+
+        self.assertFalse(serializer.is_valid())
+        self.assertEqual(Identity.objects.count(), identities_before)
+
+    def test_createIdentityRejectsNameValueOver100Chars(self):
+        serializer = IdentitySerializer(data={'is_public': True, 'gender_id': self.gender.id, 'names_list': [{'name_context_id': self.name_context.id, 'name_value': 'x' * 101, 'is_default': True}]})
+        self.assertFalse(serializer.is_valid())
+        self.assertIn('at most 100 characters', str(serializer.errors))
+
+    def test_createIdentityAcceptsNameValueOfExactly100Chars(self):
+        request = self.make_request(self.owner)
+        serializer = IdentitySerializer(context={'request': request}, data={'is_public': True, 'gender_id': self.gender.id, 'names_list': [{'name_context_id': self.name_context.id, 'name_value': 'x' * 100, 'is_default': True}]})
+        self.assertTrue(serializer.is_valid())
+        self.assertEqual(serializer.save().names.first().name_value, 'x' * 100)
+
+    def test_createIdentityRejectsNonStringNameValue(self):
+        serializer = IdentitySerializer(data={'is_public': True, 'gender_id': self.gender.id, 'names_list': [{'name_context_id': self.name_context.id, 'name_value': 12345, 'is_default': True}]})
+        self.assertFalse(serializer.is_valid())
+        self.assertIn("must be a string", str(serializer.errors))
+
+    def test_createIdentityIgnoresPayloadOwnerAndUsesAuthenticatedUser(self):
+        serializer = IdentitySerializer(data={'owner_id': 9999, 'is_public': True, 'gender_id': self.gender.id, 'names_list': [{'name_context_id': self.name_context.id, 'name_value': 'New Name', 'is_default': True}]})
+        self.assertTrue(serializer.is_valid())
+        self.assertNotIn('owner_id', serializer.validated_data)
 
     def test_publicIdentityCanBeCreated(self):
-        serializer = IdentitySerializer(data={'owner_id': self.owner.id, 'is_public': True, 'gender_id': self.gender.id, 'names_list': [{'name_context_id': self.name_context.id, 'name_value': 'New Name', 'is_default': True}]})
+        request = self.make_request(self.owner)
+        serializer = IdentitySerializer(context={'request': request}, data={'is_public': True, 'gender_id': self.gender.id, 'names_list': [{'name_context_id': self.name_context.id, 'name_value': 'New Name', 'is_default': True}]})
         self.assertTrue(serializer.is_valid())
         
         new_identity = serializer.save()
         self.assertEqual(new_identity.is_public, True)
         
     def test_privateIdentityCanBeCreated(self):
-        serializer = IdentitySerializer(data={'owner_id': self.owner.id, 'is_public': False, 'gender_id': self.gender.id, 'names_list': [{'name_context_id': self.name_context.id, 'name_value': 'New Name', 'is_default': True}]})
+        request = self.make_request(self.owner)
+        serializer = IdentitySerializer(context={'request': request}, data={'is_public': False, 'gender_id': self.gender.id, 'names_list': [{'name_context_id': self.name_context.id, 'name_value': 'New Name', 'is_default': True}]})
         self.assertTrue(serializer.is_valid())
 
         new_identity = serializer.save()
@@ -674,6 +816,35 @@ class IdentitySerializerTestCase(APITestCase):
         
         self.assertEqual(updated_identity.gender, self.gender2)
     
+    def test_genderCanBeUpdatedToNull(self):
+        serializer = IdentitySerializer(instance=self.identity, data={'gender_id': None}, partial=True)
+        self.assertTrue(serializer.is_valid())
+        updated_identity = serializer.save()
+
+        self.assertIsNone(updated_identity.gender)
+
+    def test_genderIsKeptWhenGenderIdIsNotInThePayload(self):
+        serializer = IdentitySerializer(instance=self.identity, data={'is_public': True}, partial=True)
+        self.assertTrue(serializer.is_valid())
+        updated_identity = serializer.save()
+
+        self.assertEqual(updated_identity.gender, self.gender)
+
+    def test_createIdentityWithNullGender(self):
+        request = self.make_request(self.owner)
+        serializer = IdentitySerializer(context={'request': request}, data={'is_public': False, 'gender_id': None, 'names_list': [{'name_context_id': self.name_context.id, 'name_value': 'New Name', 'is_default': True}]})
+        self.assertTrue(serializer.is_valid())
+
+        self.assertIsNone(serializer.save().gender)
+
+    def test_nullGenderIsReturnedAsNull(self):
+        self.identity.gender = None
+        self.identity.save()
+        data = IdentitySerializer(instance=self.identity).data
+
+        self.assertIn('gender', data)
+        self.assertIsNone(data['gender'])
+
     def test_isPublicCanBeUpdated(self):
         serializer = IdentitySerializer(instance=self.identity, data={'is_public': True}, partial=True)
         self.assertTrue(serializer.is_valid())
@@ -832,12 +1003,16 @@ class NameContextAPITestCase(APITestCase):
         return reverse('name-context-list')
     
     def tearDown(self):
+        IdentityName.objects.all().delete()
+        Identity.objects.all().delete()
         NameContext.objects.all().delete()
         AuthUser.objects.all().delete()
-        
+
         NameContextFactory.reset_sequence()
+        IdentityFactory.reset_sequence()
+        IdentityNameFactory.reset_sequence()
         UserFactory.reset_sequence()
-        
+
     def test_getNameContexts(self):
         response = self.client.get(self.buildUrl())
         
@@ -915,10 +1090,36 @@ class NameContextAPITestCase(APITestCase):
         
         self.assertEqual(response.status_code, 204)
         
+    def test_deleteNameContextOfADefaultNameIsBlocked(self):
+        identity = IdentityFactory.create(owner=self.user, is_public=False)
+        IdentityNameFactory.create(identity=identity, name_context=self.name_context1, name_value="John", is_default=True)
+
+        self.client.force_authenticate(user=self.superuser)
+        response = self.client.delete(self.buildUrl(id=self.name_context1.id))
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('Cannot delete this name context. It holds the default name of at least one identity.', str(response.data))
+        self.assertTrue(NameContext.objects.filter(pk=self.name_context1.pk).exists())
+        self.assertEqual(identity.names.count(), 1)
+
+    def test_deleteNameContextOfOnlyNonDefaultNamesIsAllowed(self):
+        identity = IdentityFactory.create(owner=self.user, is_public=False)
+        IdentityNameFactory.create(identity=identity, name_context=self.name_context1, name_value="John", is_default=True)
+        secondary = IdentityNameFactory.create(identity=identity, name_context=self.name_context2, name_value="Johnny", is_default=False)
+
+        self.client.force_authenticate(user=self.superuser)
+        response = self.client.delete(self.buildUrl(id=self.name_context2.id))
+
+        self.assertEqual(response.status_code, 204)
+        self.assertFalse(IdentityName.objects.filter(pk=secondary.pk).exists())
+        self.assertTrue(Identity.objects.filter(pk=identity.pk).exists())
+        self.assertEqual(identity.names.count(), 1)
+        self.assertEqual(identity.names.first().is_default, True)
+
     def test_deleteNameContextAsRegularUser(self):
         self.client.force_authenticate(user=self.user)
         response = self.client.delete(self.buildUrl(id=self.name_context1.id))
-        
+
         self.assertEqual(response.status_code, 403)
     
     def test_deleteNameContextWithoutAuthentication(self):
@@ -1032,11 +1233,11 @@ class RelationshipTypeAPITestCase(APITestCase):
         response = self.client.delete(self.buildUrl(id=self.relationship_type1.id))
         
         self.assertEqual(response.status_code, 204)
-        
+
     def test_deleteRelationshipTypeAsRegularUser(self):
         self.client.force_authenticate(user=self.user)
         response = self.client.delete(self.buildUrl(id=self.relationship_type1.id))
-        
+
         self.assertEqual(response.status_code, 403)
     
     def test_deleteRelationshipTypeWithoutAuthentication(self):
@@ -1158,6 +1359,41 @@ class IdentityNameAccessTestCase(APITestCase):
         self.assertEqual(response.data['relationship_type'], self.relationship_type2.name)
         self.assertEqual(response.data['name_context'], self.name_context2.name)
         
+    def test_updateOnlyRelationshipTypeOfIdentityNameAccess(self):
+        self.client.force_authenticate(user=self.superuser)
+        data = {
+            'relationship_type_id': self.relationship_type2.id
+        }
+        response = self.client.patch(self.buildUrl(id=self.identity_name_access.id), data, format='json')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['relationship_type'], self.relationship_type2.name)
+        self.assertEqual(response.data['name_context'], self.name_context.name)
+
+    def test_updateOnlyNameContextOfIdentityNameAccess(self):
+        self.client.force_authenticate(user=self.superuser)
+        data = {
+            'name_context_id': self.name_context2.id
+        }
+        response = self.client.patch(self.buildUrl(id=self.identity_name_access.id), data, format='json')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['relationship_type'], self.relationship_type.name)
+        self.assertEqual(response.data['name_context'], self.name_context2.name)
+
+    def test_partialUpdateIdentityNameAccessIntoDuplicate(self):
+        other_access = IdentityNameAccess.objects.create(
+            relationship_type=self.relationship_type2,
+            name_context=self.name_context
+        )
+        self.client.force_authenticate(user=self.superuser)
+        data = {
+            'relationship_type_id': self.relationship_type.id
+        }
+        response = self.client.patch(self.buildUrl(id=other_access.id), data, format='json')
+
+        self.assertEqual(response.status_code, 400)
+
     def test_updateIdentityNameAccessAsRegularUser(self):
         self.client.force_authenticate(user=self.user)
         data = {
@@ -1788,7 +2024,6 @@ class IdentityAPITestCase(APITestCase):
     def test_createIdentityAsAuthenticatedUser(self):
         self.client.force_authenticate(user=self.owner1)
         data = {
-            'owner_id': self.owner1.id,
             'gender_id': self.gender.id,
             'is_public': True,
             'names_list': [
@@ -2211,6 +2446,28 @@ class IdentityRelationshipAPIestCase(APITestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data['relationship_type'], self.relationship_type2.name)
         
+    def test_updateOnlyRelationshipTypeKeepsConsumer(self):
+        self.client.force_authenticate(user=self.owner)
+        data = {
+            'relationship_type_id': self.relationship_type2.id
+        }
+        response = self.client.patch(self.buildUrl(identity_pk=self.identity.id, relationship_pk=self.identity_relationship.id), data, format='json')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['relationship_type'], self.relationship_type2.name)
+        self.assertEqual(response.data['consumer_username'], self.consumer.username)
+
+    def test_updateWithConsumerOnlyKeepsRelationshipType(self):
+        self.client.force_authenticate(user=self.owner)
+        original_type = self.identity_relationship.relationship_type
+        data = {
+            'consumer_id': self.consumer.id
+        }
+        response = self.client.patch(self.buildUrl(identity_pk=self.identity.id, relationship_pk=self.identity_relationship.id), data, format='json')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['relationship_type'], original_type.name)
+
     def test_updateIdentityRelationshipAsRegularUser(self):
         self.client.force_authenticate(user=self.consumer)
         data = {
@@ -2305,3 +2562,4 @@ class IdentityRelationshipAPIestCase(APITestCase):
         response = self.client.delete(self.buildUrl(identity_pk=self.identity2.id, relationship_pk=self.identity_relationship.id))
 
         self.assertEqual(response.status_code, 404)
+        

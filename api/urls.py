@@ -28,7 +28,7 @@ urlpatterns = [
         'post': 'create'
     }), name='identity-name-access-list'),
     path('identity-name-access/<int:pk>/', views.IdentityNameAccessViewSet.as_view({
-        'get': 'retrieve', 'patch': 'update', 'delete': 'destroy'
+        'get': 'retrieve', 'patch': 'partial_update', 'delete': 'destroy'
     }), name='identity-name-access-detail'),
     path('identities/', views.IdentityViewSet.as_view({
         'get': 'list',
@@ -42,7 +42,7 @@ urlpatterns = [
         'get': 'list', 'post': 'create'}), 
          name='identity-relationship-list'),
     path('identity/<int:identity_pk>/relationships/<int:pk>/', views.IdentityRelationshipViewSet.as_view({
-        'get': 'retrieve', 'patch': 'update', 'delete': 'destroy'}), 
+        'get': 'retrieve', 'patch': 'partial_update', 'delete': 'destroy'}),
          name='identity-relationship-detail'),
     path('identity/<int:identity_pk>/names/', views.IdentityNameViewSet.as_view({
         'get': 'list', 'post': 'create'}), 

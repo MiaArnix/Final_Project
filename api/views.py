@@ -109,10 +109,30 @@ class NameContextViewSet(viewsets.ModelViewSet):
     serializer_class = NameContextSerializer
     permission_classes = [MetadataPermission, IsAuthenticatedOrReadOnly]
 
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+
+        # cannot delete a name context that is the default for any identity
+        if IdentityName.objects.filter(name_context=instance, is_default=True).exists():
+            raise serializers.ValidationError(
+                "Cannot delete this name context. It holds the default name of at least one identity.")
+
+        return super().destroy(request, *args, **kwargs)
+
 class RelationshipTypeViewSet(viewsets.ModelViewSet):
     queryset = RelationshipType.objects.all()
     serializer_class = RelationshipTypeSerializer
     permission_classes = [MetadataPermission]
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+
+        # cannot delete relationship type in use
+        if IdentityRelationship.objects.filter(relationship_type=instance).exists():
+            raise serializers.ValidationError(
+                "Cannot delete this relationship type. It is still used by at least one relationship.")
+
+        return super().destroy(request, *args, **kwargs)
 
 class IdentityNameAccessViewSet(viewsets.ModelViewSet):
     queryset = IdentityNameAccess.objects.all()
@@ -144,10 +164,7 @@ class IdentityViewSet(viewsets.ModelViewSet):
                 queryset = queryset.filter(is_public=True)
     
         return queryset
-    
-    def perform_create(self, serializer):
-        serializer.save(owner=self.request.user)
-        
+          
     def retrieve(self, request, *args, **kwargs):
         response = super().retrieve(request, *args, **kwargs)
         instance = self.get_object()

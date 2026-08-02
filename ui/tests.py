@@ -399,9 +399,7 @@ class IdentityListViewTestCase(TestCase):
 class CreateIdentityViewTestCase(TestCase):
     user = None
     gender = None
-    gender2 = None
     name_context1 = None
-    name_context2 = None
     
     def setUp(self):
         self.user = AuthUser.objects.create_user(username='testuser', password='testpassword')
@@ -411,9 +409,7 @@ class CreateIdentityViewTestCase(TestCase):
     def tearDown(self):
         self.user.delete()
         self.name_context1.delete()
-        self.name_context2.delete()
         self.gender.delete()
-        self.gender2.delete()
         
     def buildUrl(self):
         return reverse('ui:create-identity')

@@ -35,6 +35,12 @@ for user in auth_users:
             password=user["password"]
         )
 
+AuthUser.objects.create_superuser(
+    username="admin",
+    email="admin@localhost",
+    password="admin"
+)
+
 
 with metadata_file.open() as file:
     metadata_data = json.load(file)
