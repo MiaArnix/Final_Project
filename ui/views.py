@@ -96,9 +96,11 @@ def identity_list(request):
 
 @login_required
 def create_identity(request):
+    # a GET is the user opening the page from the navigation, so it has to render
+    # the empty form - the template posts back to this same url
     if request.method != 'POST':
-        return redirect_to_owned_identities()
-    
+        return render(request, 'ui/create_identity.html', {'form': IdentityCreateForm()})
+
     form = IdentityCreateForm(request.POST)
     if form.is_valid():
         with transaction.atomic():

@@ -53,7 +53,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework_simplejwt.token_blacklist',
     'drf_standardized_errors',
-    'drf_spectacular'
+    'drf_spectacular',
+    'bootstrap4'
 ]
 
 MIDDLEWARE = [

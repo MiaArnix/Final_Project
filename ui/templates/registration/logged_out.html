@@ -2,13 +2,7 @@
 {% load static %}
 
 {% block content %}
-<div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-6">
-            <h2>Logged Out</h2>
-            <p>You have been successfully logged out.</p>
-            <p><a href="{% url 'login' %}" class="btn btn-primary">Log in again</a></p>
-        </div>
-    </div>
-</div>
+<h4>Logged Out</h4>
+<p>You have been successfully logged out.</p>
+<p><a href="{% url 'login' %}" class="button-link">Log in again</a></p>
 {% endblock %}

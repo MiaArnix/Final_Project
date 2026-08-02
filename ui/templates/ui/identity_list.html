@@ -28,8 +28,12 @@
             <td>{{ identity.gender.name }}</td>
             <td>{% if identity.is_public %}Yes{% else %}No{% endif %}</td>
             {% if scope == 'owned' %}
-            <td><a href="{%url 'ui:delete-identity' identity.id %}">Delete</a> <a
-                    href="{%url 'ui:edit-identity' identity.id %}">Edit</a></td>
+            <td>
+                <a href="{% url 'ui:edit-identity' identity.id %}" title="Edit"><i
+                        class="bi bi-pencil-square icon"></i></a>
+                <a href="{% url 'ui:delete-identity' identity.id %}" title="Delete"><i
+                        class="bi bi-trash3-fill icon"></i></a>
+            </td>
         </tr>
         {% endif %}
     </table>
@@ -48,8 +52,9 @@
             <td>{{ name.name_context.name }}</td>
             <td>{% if name.is_default %}Yes{% else %}No{% endif %}</td>
             {% if scope == 'owned' %}
-            <td><a href="{% url 'ui:delete-name' name.id %}">Delete</a> <a
-                    href="{% url 'ui:edit-name' name.id %}">Edit</a>
+            <td>
+                <a href="{% url 'ui:edit-name' name.id %}" title="Edit"><i class="bi bi-pencil-square icon"></i></a>
+                <a href="{% url 'ui:delete-name' name.id %}" title="Delete"><i class="bi bi-trash3-fill icon"></i></a>
             </td>
             {% endif %}
         </tr>
@@ -83,7 +88,8 @@
         <tr>
             <td>{{ relation.consumer }}</td>
             <td>{{ relation.relationship_type }}</td>
-            <td><a href="{% url 'ui:delete-relationship' relation.id %}">Delete</a>
+            <td><a href="{% url 'ui:delete-relationship' relation.id %}" title="Delete"><i
+                        class="bi bi-trash3-fill icon"></i></a>
             </td>
         </tr>
         {% endfor %}

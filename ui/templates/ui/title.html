@@ -1,26 +1,32 @@
 {% load static %}
 
-<nav class="navbar navbar-expand-md sticky-top flex-column">
-  <div class="w-100 d-flex">
-    <ul class="navbar-nav mr-auto" id="navigation">
-
-      {% if user.is_authenticated %}
-      <p>Logged in as: <strong>{{ user.username }}</strong></p>
-      <li class="nav-item active">
-        <a class="nav-link" href="{% url 'logout' %}">Logout</a>
-      </li>
-      <li class="nav-item active">
-        <a class="nav-link" href="{% url 'password_reset' %}">Reset Password</a>
-      </li>
-      {% else %}
-      <li class="nav-item active">
-        <a class="nav-link" href="{% url 'login' %}">Log In</a>
-      </li>
-      <li class="nav-item active">
-        <a class="nav-link" href="{% url 'ui:register' %}">Register</a>
-      </li>
-      {% endif %}
-
-    </ul>
+<nav>
+  <div id="header">
+    <a href="{% url 'ui:index' %}"><img src="{% static 'assets/logo.png' %}" id="logo" alt="platform logo"></a>
+    <h1 id="application_title">Identity Management</h1>
   </div>
+
+  <ul id="navigation">
+    <li class="nav-item">
+      <a class="nav-link" href="{% url 'ui:index' %}">Home</a>
+    </li>
+    {% if user.is_authenticated %}
+    <li class="nav-item">
+      <a class="nav-link" href="{% url 'password_reset' %}">Reset Password</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" href="{% url 'logout' %}">Logout</a>
+    </li>
+    <li class="top-status">
+      <p>Logged in as: <strong>{{ user.username }}</strong></p>
+    </li>
+    {% else %}
+    <li class="nav-item">
+      <a class="nav-link" href="{% url 'login' %}">Log In</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" href="{% url 'ui:register' %}">Register</a>
+    </li>
+    {% endif %}
+  </ul>
 </nav>

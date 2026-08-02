@@ -420,6 +420,14 @@ class CreateIdentityViewTestCase(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertRedirects(response, f"/accounts/login/?next={self.buildUrl()}")
 
+    def test_createIdentityViewRendersTheFormOnGet(self):
+        self.client.login(username='testuser', password='testpassword')
+        response = self.client.get(self.buildUrl())
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'ui/create_identity.html')
+        self.assertIn('form', response.context)
+
     def test_createIdentityViewRedirectsToOwnedIdentityListAfterSuccessfulPost(self):
         self.client.login(username='testuser', password='testpassword')
         post_data = {

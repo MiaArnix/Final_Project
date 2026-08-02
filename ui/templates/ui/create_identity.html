@@ -30,7 +30,7 @@
         </table>
 
         {% if form.errors %}
-        <div>
+        <div class="form-errors">
             {% for field, errors in form.errors.items %}
             {% for error in errors %}
             <p>{{ field }}: {{ error }}</p>
@@ -40,7 +40,7 @@
         {% endif %}
 
         <button type="submit">Create Identity</button>
-        <a href="{% url 'ui:identity-list' %}?scope=owned">Cancel</a>
+        <a href="{% url 'ui:identity-list' %}?scope=owned" class="button-link">Cancel</a>
     </form>
 </div>
 
