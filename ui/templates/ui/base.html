@@ -1,35 +1,33 @@
 {% include "./header.html" %}
 {% include "./title.html" %}
 
-<div>
-  {% if messages %}
-  <script>
-    {% for message in messages %}
-    alert("{{ message|escapejs }}");
-    {% endfor %}
-  </script>
-  {% endif %}
+{% if messages %}
+<script>
+  {% for message in messages %}
+  alert("{{ message|escapejs }}");
+  {% endfor %}
+</script>
+{% endif %}
 
-  <div class="layout">
-    <aside class="sidebar">
-      <div class="side-section">
-        <h4>Navigation</h4>
-        <p><a href="{% url 'ui:metadata-list' %}">Metadata List</a></p>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="side-section">
+      <h4>Navigation</h4>
+      <p><a href="{% url 'ui:metadata-list' %}">Metadata List</a></p>
 
-        {% if user.is_authenticated %}
-        <p><a href="{% url 'ui:create-identity' %}">Create Identity</a></p>
-        <p><a href="{% url 'ui:identity-list' %}?scope=owned">Identities Owned by Me</a></p>
-        <p><a href="{% url 'ui:identity-list' %}?scope=shared">Identities Shared with Me</a></p>
-        {% else %}
-        <p><a href="{% url 'ui:identity-list' %}?scope=public">Public Identities List</a></p>
-        {% endif %}
-      </div>
-    </aside>
+      {% if user.is_authenticated %}
+      <p><a href="{% url 'ui:create-identity' %}">Create Identity</a></p>
+      <p><a href="{% url 'ui:identity-list' %}?scope=owned">Identities Owned by Me</a></p>
+      <p><a href="{% url 'ui:identity-list' %}?scope=shared">Identities Shared with Me</a></p>
+      {% else %}
+      <p><a href="{% url 'ui:identity-list' %}?scope=public">Public Identities List</a></p>
+      {% endif %}
+    </div>
+  </aside>
 
-    <main class="main-content">
-      {% block content %} Did not render content {% endblock %}
-    </main>
-  </div>
-
-  {% include "./footer.html" %}
+  <main class="main-content">
+    {% block content %} Did not render content {% endblock %}
+  </main>
 </div>
+
+{% include "./footer.html" %}
