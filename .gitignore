@@ -11,6 +11,25 @@ __pycache__/
 *.env
 .env.*
 
+# TLS certificates and keys
+certs/
+*.pem
+*.key
+*.crt
+
 # postman setup
 postman/
 POSTMAN_TEST_SCENARIOS.md
+
+# test reports
+reports/
+.coverage
+.pytest_cache/
+conftest.py
+pytest.ini
+evaluation/
+
+# postman scripts
+scripts/
+*.js
+*.sh

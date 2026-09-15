@@ -12,6 +12,8 @@
 {% endif %}
 
 {% for identity in identities %}
+<hr />
+<hr />
 <h2>Identity: {{ identity.id }}</h2>
 <div class="section">
     <table>
@@ -25,7 +27,11 @@
         </tr>
         <tr>
             <td>{{ identity.id }}</td>
+            {% if identity.gender %}
             <td>{{ identity.gender.name }}</td>
+            {% else %}
+            <td> - </td>
+            {% endif %}
             <td>{% if identity.is_public %}Yes{% else %}No{% endif %}</td>
             {% if scope == 'owned' %}
             <td>
@@ -61,7 +67,30 @@
         {% endfor %}
     </table>
     {% if scope == 'owned' %}
-    <h3>Add Name</h3>
+
+    <table>
+        <tr>
+            <th>User Accessing Identity</th>
+            <th>Relationship Type</th>
+            <th>Actions</th>
+        </tr>
+        {% if identity.relationships|length == 0 %}
+        <tr>
+            <td colspan="3">No relationships</td>
+        </tr>
+        {% else %}
+        {% for relation in identity.relationships %}
+        <tr>
+            <td>{{ relation.consumer }}</td>
+            <td>{{ relation.relationship_type }}</td>
+            <td><a href="{% url 'ui:delete-relationship' relation.id %}" title="Delete"><i
+                        class="bi bi-trash3-fill icon"></i></a>
+            </td>
+        </tr>
+        {% endfor %}
+        {% endif %}
+    </table>
+    <h4>Add Name</h4>
     <form method="POST" action="{% url 'ui:add-name' %}">
         {% csrf_token %}
 
@@ -78,23 +107,7 @@
         <input type="checkbox" name="is_default">
         <button type="submit">Add Name</button>
     </form>
-    <table>
-        <tr>
-            <th>User Accessing Identity</th>
-            <th>Relationship Type</th>
-            <th>Actions</th>
-        </tr>
-        {% for relation in identity.relationships %}
-        <tr>
-            <td>{{ relation.consumer }}</td>
-            <td>{{ relation.relationship_type }}</td>
-            <td><a href="{% url 'ui:delete-relationship' relation.id %}" title="Delete"><i
-                        class="bi bi-trash3-fill icon"></i></a>
-            </td>
-        </tr>
-        {% endfor %}
-    </table>
-    <h3>Add Relationship</h3>
+    <h4>Add Relationship</h4>
     <form method="POST" action="{% url 'ui:add-relationship' %}">
         {% csrf_token %}
 

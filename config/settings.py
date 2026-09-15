@@ -28,7 +28,17 @@ SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '[::1]']
+
+# TLS is on by default, can be set to 0 in .env file to disable it for local development
+USE_TLS = os.getenv('USE_TLS', '1') == '1'
+
+if USE_TLS:
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_SSL_REDIRECT = True
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    CSRF_TRUSTED_ORIGINS = ['https://localhost:8000', 'https://127.0.0.1:8000']
 
 
 # Application definition
@@ -54,7 +64,8 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',
     'drf_standardized_errors',
     'drf_spectacular',
-    'bootstrap4'
+    'bootstrap4',
+    'django_extensions',
 ]
 
 MIDDLEWARE = [

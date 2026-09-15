@@ -1,0 +1,35 @@
+# Read automatically by pytest-cov. Without it the report is dominated by generated
+# files - migrations and the test modules themselves - which say nothing about how much
+# of the application the suite exercises.
+[run]
+branch = True
+omit =
+    # generated or test-only code
+    */migrations/*
+    */tests.py
+    */test_*.py
+    */model_factories.py
+    manage.py
+    config/asgi.py
+    config/wsgi.py
+    .venv/*
+    # Django boilerplate: declarations and registrations, no logic a test could exercise
+    */__init__.py
+    */apps.py
+    */urls.py
+    */admin.py
+    # stubs the suite does not reach: schema.py holds drf-spectacular hooks used at
+    # schema-generation time, identity/views.py is a single import
+    api/schema.py
+    identity/views.py
+
+[report]
+show_missing = True
+# List every measured file, including the fully covered ones: in a written report the
+# 100% rows are the point, not noise to be folded away.
+skip_covered = False
+exclude_lines =
+    pragma: no cover
+    if TYPE_CHECKING:
+    raise NotImplementedError
+    if __name__ == .__main__.:
