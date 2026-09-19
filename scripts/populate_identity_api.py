@@ -5,8 +5,9 @@ import os
 import django
 import shutil
 from django.contrib.auth import get_user_model
+from dotenv import load_dotenv
 
-
+# script populating DB with test data
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, ".."))
 sys.path.append(PROJECT_ROOT)
@@ -14,6 +15,9 @@ sys.path.append(PROJECT_ROOT)
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 django.setup()
 AuthUser = get_user_model()
+
+load_dotenv()
+ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD')
 
 from identity.models import *  # noqa
 
@@ -38,7 +42,7 @@ for user in auth_users:
 AuthUser.objects.create_superuser(
     username="admin",
     email="admin@localhost",
-    password="admin"
+    password=ADMIN_PASSWORD
 )
 
 

@@ -113,6 +113,11 @@ SIMPLE_JWT = {
 
 REST_USE_JWT = True
 
+# UI session settings - expire after 15 minutes of inactivity, and require login again after browser is closed
+SESSION_COOKIE_AGE = 15 * 60
+SESSION_SAVE_EVERY_REQUEST = True
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+
 AUTHENTICATION_BACKENDS = (
     'rules.permissions.ObjectPermissionBackend',
     'django.contrib.auth.backends.ModelBackend',

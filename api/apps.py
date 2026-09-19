@@ -1,6 +1,6 @@
 from django.apps import AppConfig
 
-
+# import rules
 class ApiConfig(AppConfig):
     name = 'api'
     

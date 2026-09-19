@@ -34,6 +34,7 @@ rules.add_perm('identity.access_identity_relationship', rules.is_superuser | is_
 # identity name rules
 # it is allowed to read identity name if the identity is public OR the user is superuser OR identity owner
 rules.add_perm('identity.read_identity_name', is_public |  rules.is_superuser | is_identity_owner )
+
 # it is allowed to write identity name if the user is superuser OR identity owner
 rules.add_perm('identity.write_identity_name', rules.is_superuser | is_identity_owner)
 
